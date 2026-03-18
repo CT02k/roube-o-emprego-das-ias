@@ -26,10 +26,16 @@ export const usePromptsData = (
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const inFlightRef = useRef(false);
+  const queuedRefreshRef = useRef(false);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
 
   const refresh = useCallback(async () => {
-    if (!sessionId || inFlightRef.current) {
+    if (!sessionId) {
+      return;
+    }
+
+    if (inFlightRef.current) {
+      queuedRefreshRef.current = true;
       return;
     }
 
@@ -82,6 +88,10 @@ export const usePromptsData = (
     } finally {
       setIsLoading(false);
       inFlightRef.current = false;
+      if (queuedRefreshRef.current) {
+        queuedRefreshRef.current = false;
+        void refreshRef.current();
+      }
     }
   }, [sessionId, mode, selectedPromptId, adminUnlocked]);
 

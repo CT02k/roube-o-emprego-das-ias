@@ -138,8 +138,25 @@ export default function HomePage() {
   }, [adminGateReady, adminUnlocked, mode, setMode, setSelectedPromptId]);
 
   useEffect(() => {
+    const isAdminShortcut = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.altKey) {
+        return false;
+      }
+
+      return (
+        event.code === "Quote" ||
+        event.code === "BracketLeft" ||
+        event.code === "IntlRo" ||
+        event.key === "'" ||
+        event.key === '"' ||
+        event.key === "Dead" ||
+        event.key === "´" ||
+        event.key === "`"
+      );
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.code !== "Quote") {
+      if (!isAdminShortcut(event)) {
         return;
       }
       event.preventDefault();
