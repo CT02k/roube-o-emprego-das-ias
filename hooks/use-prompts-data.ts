@@ -16,7 +16,8 @@ type UsePromptsDataResult = {
 
 export const usePromptsData = (
   sessionId: string,
-  mode: AppMode
+  mode: AppMode,
+  adminUnlocked = false
 ): UsePromptsDataResult => {
   const selectedPromptId = useUIStore((state) => state.selectedPromptId);
   const [list, setList] = useState<PromptListItem[]>([]);
@@ -32,9 +33,21 @@ export const usePromptsData = (
       return;
     }
 
+    if (mode === "admin" && !adminUnlocked) {
+      setList([]);
+      setSelectedDetail(null);
+      setRequesterThread([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     inFlightRef.current = true;
     try {
-      const nextList = await api.listPrompts(sessionId, mode);
+      const nextList =
+        mode === "admin"
+          ? await api.adminListPrompts()
+          : await api.listPrompts(sessionId, mode);
       setList(nextList.items);
       setError(null);
 
@@ -51,7 +64,7 @@ export const usePromptsData = (
           );
           setRequesterThread(sorted);
         }
-      } else {
+      } else if (mode === "worker" || mode === "admin") {
         setRequesterThread([]);
         if (selectedPromptId) {
           const detail = await api.getPromptDetail(selectedPromptId);
@@ -59,6 +72,9 @@ export const usePromptsData = (
         } else {
           setSelectedDetail(null);
         }
+      } else {
+        setRequesterThread([]);
+        setSelectedDetail(null);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Falha ao carregar dados.";
@@ -67,7 +83,7 @@ export const usePromptsData = (
       setIsLoading(false);
       inFlightRef.current = false;
     }
-  }, [sessionId, mode, selectedPromptId]);
+  }, [sessionId, mode, selectedPromptId, adminUnlocked]);
 
   useEffect(() => {
     refreshRef.current = refresh;

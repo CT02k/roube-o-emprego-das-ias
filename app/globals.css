@@ -80,6 +80,16 @@
   --sidebar-ring: oklch(0.76 0.15 55);
 }
 
+[data-mode="admin"] {
+  --primary: oklch(0.71 0.17 24);
+  --primary-foreground: oklch(0.98 0.01 30);
+  --accent: oklch(0.34 0.1 25);
+  --accent-foreground: oklch(0.97 0.01 30);
+  --ring: oklch(0.71 0.17 24);
+  --sidebar-primary: oklch(0.71 0.17 24);
+  --sidebar-ring: oklch(0.71 0.17 24);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -8,7 +8,7 @@ import { useEffect } from "react";
 const MODE_KEY = "human-chat-mode";
 
 const isMode = (value: string | null): value is AppMode =>
-  value === "requester" || value === "worker";
+  value === "requester" || value === "worker" || value === "admin";
 
 export const useModeSync = () => {
   const mode = useUIStore((state) => state.mode);

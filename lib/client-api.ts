@@ -12,6 +12,8 @@ type PromptListResponse = {
   items: PromptListItem[];
 };
 
+const ADMIN_KEY = "010a381a5b837f16ee15a1f261a65f3e07cc5838367ffae6f3b9b14cbae48081";
+
 const parseError = async (response: Response) => {
   const body = await response.json().catch(() => null);
   const message = body?.error;
@@ -30,6 +32,24 @@ async function request<T>(
     headers: {
       "Content-Type": "application/json",
       "x-session-id": init.sessionId,
+      ...init.headers,
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json() as Promise<T>;
+}
+
+async function requestAdmin<T>(input: RequestInfo | URL, init: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-key": ADMIN_KEY,
       ...init.headers,
     },
     cache: "no-store",
@@ -83,5 +103,21 @@ export const api = {
     request<SharePayload>(`/api/share/latest`, {
       method: "GET",
       sessionId,
+    }),
+  adminListPrompts: (status?: "pending" | "in_progress" | "responded") =>
+    requestAdmin<PromptListResponse>(
+      status ? `/api/admin/prompts?status=${status}` : "/api/admin/prompts",
+      {
+        method: "GET",
+      }
+    ),
+  adminReopenPrompt: (id: string) =>
+    requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}/reopen`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    }),
+  adminDeletePrompt: (id: string) =>
+    requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}`, {
+      method: "DELETE",
     }),
 };

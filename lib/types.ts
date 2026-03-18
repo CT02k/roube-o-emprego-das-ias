@@ -1,4 +1,4 @@
-export type AppMode = "requester" | "worker";
+export type AppMode = "requester" | "worker" | "admin";
 
 export type PromptStatus = "pending" | "in_progress" | "responded";
 export type ResponseType = "text" | "image";
@@ -8,9 +8,13 @@ export type PromptListItem = {
   textPreview: string;
   status: PromptStatus;
   createdAt: string;
+  updatedAt?: string;
   claimedAt?: string;
   respondedAt?: string;
   responseType?: ResponseType;
+  requesterSessionId?: string;
+  claimedBySessionId?: string;
+  responderSessionId?: string;
 };
 
 export type PromptDetail = {

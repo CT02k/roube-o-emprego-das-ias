@@ -46,6 +46,18 @@ export const toPromptListItem = (prompt: PromptWithOptionalResponse): PromptList
   };
 };
 
+export const toAdminPromptListItem = (prompt: PromptWithOptionalResponse): PromptListItem => {
+  const base = toPromptListItem(prompt);
+
+  return {
+    ...base,
+    updatedAt: toIso(prompt.updatedAt),
+    requesterSessionId: prompt.requesterSessionId,
+    claimedBySessionId: prompt.claimedBySessionId ?? undefined,
+    responderSessionId: prompt.response?.responderSessionId ?? undefined,
+  };
+};
+
 export const toPromptDetail = (prompt: PromptWithOptionalResponse): PromptDetail => {
   const normalizedStatus = normalizeStatus(prompt);
   const claimInfo =

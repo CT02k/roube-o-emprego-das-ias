@@ -12,6 +12,15 @@ import { Queue, QueueItem, QueueItemContent } from "@/components/ai-elements/que
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,23 +38,23 @@ import {
   BellOffIcon,
   BrushIcon,
   Clock3Icon,
+  LockIcon,
   LoaderCircleIcon,
+  ShieldIcon,
   SendIcon,
   Share2Icon,
+  Trash2Icon,
+  UnlockIcon,
   User2Icon,
   UserPenIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
-
-const SATIRE_TEXTS = [
-  "Procurando um humano disponível...",
-  "Seu prompt foi encaminhado para um café.",
-  "Aguardando inspiração analogica.",
-];
+import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
+const ADMIN_STORAGE_KEY = "human-chat-admin-unlocked";
+const ADMIN_KEY = "010a381a5b837f16ee15a1f261a65f3e07cc5838367ffae6f3b9b14cbae48081";
 
 const statusMeta = (item: Pick<PromptListItem, "status">) => {
   if (item.status === "responded") {
@@ -75,11 +84,6 @@ export default function HomePage() {
   const setImageDraftDataUrl = useUIStore((state) => state.setImageDraftDataUrl);
   const clearDraft = useUIStore((state) => state.clearDraft);
 
-  const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
-    sessionId,
-    mode
-  );
-  const [microcopyIndex, setMicrocopyIndex] = useState(0);
   const [isCanvasOpen, setCanvasOpen] = useState(false);
   const [isShareOpen, setShareOpen] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
@@ -92,23 +96,61 @@ export default function HomePage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>("default");
+  const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminGateReady, setAdminGateReady] = useState(false);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminKeyInput, setAdminKeyInput] = useState("");
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminBusy, setAdminBusy] = useState(false);
   const requesterResponsesRef = useRef<Record<string, boolean>>({});
   const requesterInitRef = useRef(false);
   const workerPromptIdsRef = useRef<Set<string>>(new Set());
   const workerInitRef = useRef(false);
-
-  useEffect(() => {
-    const interval = window.setInterval(() => {
-      setMicrocopyIndex((value) => (value + 1) % SATIRE_TEXTS.length);
-    }, 2800);
-    return () => window.clearInterval(interval);
-  }, []);
-
+  const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
+    sessionId,
+    mode,
+    adminUnlocked
+  );
   useEffect(() => {
     if (mode === "requester" && selectedPromptId) {
       setSelectedPromptId(null);
     }
   }, [mode, selectedPromptId, setSelectedPromptId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    setAdminUnlocked(window.localStorage.getItem(ADMIN_STORAGE_KEY) === "1");
+    setAdminGateReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!adminGateReady) {
+      return;
+    }
+
+    if (!adminUnlocked && mode === "admin") {
+      setMode("requester");
+      setSelectedPromptId(null);
+    }
+  }, [adminGateReady, adminUnlocked, mode, setMode, setSelectedPromptId]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.ctrlKey || event.metaKey) || event.code !== "Quote") {
+        return;
+      }
+      event.preventDefault();
+      setAdminError(null);
+      setAdminKeyInput("");
+      setAdminDialogOpen(true);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -158,8 +200,6 @@ export default function HomePage() {
       cancelled = true;
     };
   }, [sessionId]);
-
-  const currentSatire = SATIRE_TEXTS[microcopyIndex];
 
   useEffect(() => {
     if (!notifyEnabled || notifyPermission !== "granted") {
@@ -279,6 +319,34 @@ export default function HomePage() {
     setLocalError("Ative notificações no navegador para receber alertas.");
   };
 
+  const onAdminUnlock = async () => {
+    setAdminBusy(true);
+    try {
+      if (adminKeyInput.trim() !== ADMIN_KEY) {
+        setAdminError("Chave admin invalida.");
+        return;
+      }
+
+      window.localStorage.setItem(ADMIN_STORAGE_KEY, "1");
+      setAdminUnlocked(true);
+      setAdminDialogOpen(false);
+      setAdminError(null);
+      setMode("admin");
+    } finally {
+      setAdminBusy(false);
+    }
+  };
+
+  const onAdminLogout = () => {
+    window.localStorage.removeItem(ADMIN_STORAGE_KEY);
+    setAdminUnlocked(false);
+    setAdminDialogOpen(false);
+    setAdminKeyInput("");
+    setAdminError(null);
+    setSelectedPromptId(null);
+    setMode("requester");
+  };
+
   const selectPrompt = async (item: PromptListItem) => {
     setLocalError(null);
     setSelectedPromptId(item.id);
@@ -293,6 +361,46 @@ export default function HomePage() {
       }
     }
     await refresh();
+  };
+
+  const selectAdminPrompt = async (item: PromptListItem) => {
+    setLocalError(null);
+    setSelectedPromptId(item.id);
+    await refresh();
+  };
+
+  const reopenByAdmin = async () => {
+    if (!selectedPromptId) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.adminReopenPrompt(selectedPromptId);
+      setSelectedPromptId(null);
+      await refresh();
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "Falha ao reabrir prompt.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteByAdmin = async () => {
+    if (!selectedPromptId) {
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.adminDeletePrompt(selectedPromptId);
+      setSelectedPromptId(null);
+      await refresh();
+    } catch (err) {
+      setLocalError(err instanceof Error ? err.message : "Falha ao excluir prompt.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const submitNewPrompt = async (text: string) => {
@@ -343,22 +451,27 @@ export default function HomePage() {
 
   const draftReady = imageDraftDataUrl ? true : textDraft.trim().length > 0;
   const isWorkerWithSelection = mode === "worker" && Boolean(selectedPromptId);
+  const isAdminWithSelection = mode === "admin" && Boolean(selectedPromptId);
   const canSendRequester = mode === "requester" && textDraft.trim().length > 0 && !isSubmitting;
   const canSendWorker =
     mode === "worker" &&
     draftReady &&
     canRespond(selectedDetail, sessionId) &&
     !isSubmitting;
+  const adminTabVisible = adminGateReady && adminUnlocked;
+  const adminList = mode === "admin" ? list : [];
 
   const waitingBadge = useMemo(
     () =>
       mode === "worker"
         ? "Voce esta substituindo uma IA."
+        : mode === "admin"
+          ? "Painel administrativo"
         : "CLT-5.3-Mini",
     [mode]
   );
 
-  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (!(event.ctrlKey || event.metaKey) || event.key !== "Enter") {
       return;
     }
@@ -385,7 +498,7 @@ export default function HomePage() {
               <p className="text-muted-foreground text-xs">{waitingBadge}</p>
             </div>
             <div className="flex w-full items-center gap-2 sm:w-auto">
-              {isWorkerWithSelection && (
+              {(isWorkerWithSelection || isAdminWithSelection) && (
                 <Button
                   onClick={() => {
                     clearDraft();
@@ -395,7 +508,13 @@ export default function HomePage() {
                   variant="outline"
                 >
                   <ArrowLeftIcon />
-                  Voltar para fila
+                  Voltar para lista
+                </Button>
+              )}
+              {mode === "admin" && adminTabVisible && (
+                <Button onClick={onAdminLogout} type="button" variant="outline">
+                  <LockIcon />
+                  Sair do admin
                 </Button>
               )}
               {!NATIVE_SHARE_ENABLED ? (
@@ -461,6 +580,12 @@ export default function HomePage() {
                     <UserPenIcon />
                     Trabalhador
                   </TabsTrigger>
+                  {adminTabVisible && (
+                    <TabsTrigger value="admin">
+                      <ShieldIcon />
+                      Admin
+                    </TabsTrigger>
+                  )}
                 </TabsList>
               </Tabs>
             </div>
@@ -469,17 +594,21 @@ export default function HomePage() {
           <div
             className={cn(
               "grid gap-4",
-              mode === "worker" && !isWorkerWithSelection
+              (mode === "worker" && !isWorkerWithSelection) ||
+                (mode === "admin" && !isAdminWithSelection)
                 ? "lg:grid-cols-[320px_1fr]"
                 : "grid-cols-1"
             )}
           >
-            {mode === "worker" && !isWorkerWithSelection && (
+                        {((mode === "worker" && !isWorkerWithSelection) ||
+              (mode === "admin" && !isAdminWithSelection)) && (
               <aside className="flex min-h-0 max-h-80 flex-col rounded-sm border border-border bg-card p-3 lg:max-h-[calc(100svh-8rem)]">
-                <p className="mb-2 px-1 font-medium text-sm">Fila de prompts</p>
+                <p className="mb-2 px-1 font-medium text-sm">
+                  {mode === "admin" ? "Painel de moderacao" : "Fila de prompts"}
+                </p>
                 <Queue className="h-full border-none bg-transparent p-0 shadow-none">
                   <div className="space-y-1 overflow-y-auto pr-1">
-                    {list.map((item) => {
+                    {(mode === "admin" ? adminList : list).map((item) => {
                       const meta = statusMeta(item);
                       const active = item.id === selectedPromptId;
                       return (
@@ -491,7 +620,9 @@ export default function HomePage() {
                               : "border-transparent bg-muted hover:bg-zinc-800"
                           )}
                           key={item.id}
-                          onClick={() => void selectPrompt(item)}
+                          onClick={() =>
+                            void (mode === "admin" ? selectAdminPrompt(item) : selectPrompt(item))
+                          }
                           type="button"
                         >
                           <QueueItem className="w-full p-0 hover:bg-transparent">
@@ -505,37 +636,43 @@ export default function HomePage() {
                         </button>
                       );
                     })}
-                    {list.length === 0 && (
+                    {(mode === "admin" ? adminList.length === 0 : list.length === 0) && (
                       <div className="rounded-sm border border-dashed border-border p-4 text-muted-foreground text-sm">
                         Sem mensagens por enquanto.
                       </div>
                     )}
                   </div>
                 </Queue>
-                <div className="mt-3 rounded-sm border border-border bg-background p-3">
-                  <p className="font-medium text-sm">Notificações de novos prompts</p>
-                  <p className="mt-1 text-muted-foreground text-xs">
-                    Receba um alerta quando novos prompts entrarem na fila.
-                  </p>
-                  <Button
-                    className="mt-3 w-full"
-                    onClick={() => void onEnableNotifications()}
-                    type="button"
-                    variant="outline"
-                  >
-                    {notifyEnabled && notifyPermission === "granted" ? (
-                      <>
-                        <BellIcon />
-                        Desativar notificações
-                      </>
-                    ) : (
-                      <>
-                        <BellOffIcon />
-                        Receber notificações
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {mode === "worker" ? (
+                  <div className="mt-3 rounded-sm border border-border bg-background p-3">
+                    <p className="font-medium text-sm">Notificacoes de novos prompts</p>
+                    <p className="mt-1 text-muted-foreground text-xs">
+                      Receba um alerta quando novos prompts entrarem na fila.
+                    </p>
+                    <Button
+                      className="mt-3 w-full"
+                      onClick={() => void onEnableNotifications()}
+                      type="button"
+                      variant="outline"
+                    >
+                      {notifyEnabled && notifyPermission === "granted" ? (
+                        <>
+                          <BellIcon />
+                          Desativar notificacoes
+                        </>
+                      ) : (
+                        <>
+                          <BellOffIcon />
+                          Receber notificacoes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-3 rounded-sm border border-border bg-background p-3 text-xs text-muted-foreground">
+                    Use Ctrl + &apos; para desbloquear o painel admin.
+                  </div>
+                )}
               </aside>
             )}
 
@@ -633,114 +770,177 @@ export default function HomePage() {
                           </MessageContent>
                         </Message>
                       )}
-                      {/* {!selectedDetail.response && (
-                        <div className="rounded-sm border border-dashed border-border bg-muted p-4 text-muted-foreground text-sm">
-                          <Shimmer className="font-medium text-sm" duration={1.8}>{statusMeta({ status: selectedDetail.status }).label}</Shimmer>
-                          <Shimmer className="mt-1 text-sm" duration={2.2}>{currentSatire}</Shimmer>
-                        </div>
-                      )} */}
                     </>
+                  )}
+                  {mode === "admin" && !selectedDetail && (
+                    <ConversationEmptyState
+                      description="Selecione um prompt para moderar."
+                      icon={isLoading ? <LoaderCircleIcon className="animate-spin" /> : <ShieldIcon />}
+                      title={isLoading ? "Carregando..." : "Nenhum prompt selecionado"}
+                    />
+                  )}
+                  {mode === "admin" && selectedDetail && (
+                    <div className="space-y-3">
+                      <Message from="user">
+                        <MessageContent>{selectedDetail.text}</MessageContent>
+                      </Message>
+                      {selectedDetail.response ? (
+                        <Message from="assistant">
+                          <MessageContent>
+                            {selectedDetail.response.type === "text" ? (
+                              <MessageResponse>{selectedDetail.response.text}</MessageResponse>
+                            ) : selectedDetail.response.imageDataUrl ? (
+                              <Image
+                                alt="Resposta em imagem"
+                                className="max-h-[420px] w-full rounded-sm border border-border object-contain"
+                                height={420}
+                                src={selectedDetail.response.imageDataUrl}
+                                unoptimized
+                                width={720}
+                              />
+                            ) : (
+                              <p className="text-muted-foreground text-sm">
+                                Resposta de imagem indisponivel.
+                              </p>
+                            )}
+                          </MessageContent>
+                        </Message>
+                      ) : (
+                        <div className="rounded-sm border border-dashed border-border bg-muted p-4 text-muted-foreground text-sm">
+                          Sem resposta ainda.
+                        </div>
+                      )}
+                      <div className="rounded-sm border border-border bg-muted p-3 text-xs text-muted-foreground">
+                        <p>ID do prompt: {selectedDetail.id}</p>
+                        <p>
+                          Solicitante:{" "}
+                          {adminList.find((item) => item.id === selectedDetail.id)?.requesterSessionId ?? "-"}
+                        </p>
+                        <p>
+                          Claimer:{" "}
+                          {adminList.find((item) => item.id === selectedDetail.id)?.claimedBySessionId ?? "-"}
+                        </p>
+                        <p>
+                          Respondedor:{" "}
+                          {adminList.find((item) => item.id === selectedDetail.id)?.responderSessionId ?? "-"}
+                        </p>
+                        <p>Criado em: {new Date(selectedDetail.createdAt).toLocaleString("pt-BR")}</p>
+                      </div>
+                    </div>
                   )}
                 </ConversationContent>
               </Conversation>
-
               <Separator />
 
               <div className="p-4">
-                <div className="flex flex-col gap-3 rounded-sm border border-border bg-background p-3">
-                  <Textarea
-                    className="min-h-28 resize-none border-none bg-transparent p-2 shadow-none"
-                    disabled={mode === "worker" ? !canRespond(selectedDetail, sessionId) || isSubmitting : isSubmitting}
-                    onChange={(event) => setTextDraft(event.target.value)}
-                    onKeyDown={handleComposerKeyDown}
-                    placeholder={
-                      mode === "requester"
-                        ? "Peça algo para um humano"
-                        : "Responda como humano."
-                    }
-                    value={textDraft}
-                  />
-                  {mode === "worker" && imageDraftDataUrl && (
-                    <div className="space-y-2 rounded-sm border border-border bg-muted p-3">
-                      <p className="text-xs">Desenho pronto para enviar:</p>
-                      <Image
-                        alt="Preview do desenho"
-                        className="max-h-48 rounded-sm border border-border object-contain"
-                        height={220}
-                        src={imageDraftDataUrl}
-                        unoptimized
-                        width={360}
-                      />
-                    </div>
-                  )}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {mode === "worker" ? (
-                      <div className="mr-auto flex flex-wrap gap-2">
-                        <Button
-                          disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                          onClick={() => setCanvasOpen(true)}
-                          type="button"
-                          variant="outline"
-                        >
-                          <BrushIcon />
-                          Gerar imagem
-                        </Button>
-                        <Button
-                          disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                          onClick={() => setImageDraftDataUrl(null)}
-                          type="button"
-                          variant="ghost"
-                        >
-                          Limpar rascunho
-                        </Button>
-                        <Button
-                          disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                          onClick={async () => {
-                            if (!selectedPromptId) {
-                              return;
-                            }
-                            await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
-                            clearDraft();
-                            setSelectedPromptId(null);
-                            await refresh();
-                          }}
-                          type="button"
-                          variant="ghost"
-                        >
-                          Devolver para fila
-                        </Button>
-                      </div>
-                    ) : null}
-                    {mode === "requester" ? (
-                      <p className="mr-2 ml-auto text-muted-foreground text-xs">
-                        Ctrl + Enter para enviar
-                      </p>
-                    ) : (
-                      <p className="mr-2 ml-auto text-muted-foreground text-xs">
-                        Ctrl + Enter para enviar
-                      </p>
-                    )}
-                    {mode === "requester" ? (
-                      <Button
-                        disabled={textDraft.trim().length === 0 || isSubmitting}
-                        onClick={() => void submitNewPrompt(textDraft)}
-                        type="button"
-                      >
-                        <SendIcon />
-                        Enviar
-                      </Button>
-                    ) : (
-                      <Button
-                        disabled={!draftReady || !canRespond(selectedDetail, sessionId) || isSubmitting}
-                        onClick={() => void submitWorkerResponse()}
-                        type="button"
-                      >
-                        <UserPenIcon />
-                        Responder
-                      </Button>
-                    )}
+                {mode === "admin" ? (
+                  <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-background p-3">
+                    <p className="mr-auto text-muted-foreground text-xs">
+                      Moderacao: reabra prompts ou exclua definitivamente.
+                    </p>
+                    <Button
+                      disabled={!selectedPromptId || isSubmitting}
+                      onClick={() => void reopenByAdmin()}
+                      type="button"
+                      variant="outline"
+                    >
+                      <UnlockIcon />
+                      Reabrir para fila
+                    </Button>
+                    <Button
+                      disabled={!selectedPromptId || isSubmitting}
+                      onClick={() => void deleteByAdmin()}
+                      type="button"
+                      variant="destructive"
+                    >
+                      <Trash2Icon />
+                      Excluir
+                    </Button>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col gap-3 rounded-sm border border-border bg-background p-3">
+                    <Textarea
+                      className="min-h-28 resize-none border-none bg-transparent p-2 shadow-none"
+                      disabled={mode === "worker" ? !canRespond(selectedDetail, sessionId) || isSubmitting : isSubmitting}
+                      onChange={(event) => setTextDraft(event.target.value)}
+                      onKeyDown={handleComposerKeyDown}
+                      placeholder={mode === "requester" ? "Peca algo para um humano" : "Responda como humano."}
+                      value={textDraft}
+                    />
+                    {mode === "worker" && imageDraftDataUrl && (
+                      <div className="space-y-2 rounded-sm border border-border bg-muted p-3">
+                        <p className="text-xs">Desenho pronto para enviar:</p>
+                        <Image
+                          alt="Preview do desenho"
+                          className="max-h-48 rounded-sm border border-border object-contain"
+                          height={220}
+                          src={imageDraftDataUrl}
+                          unoptimized
+                          width={360}
+                        />
+                      </div>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {mode === "worker" ? (
+                        <div className="mr-auto flex flex-wrap gap-2">
+                          <Button
+                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
+                            onClick={() => setCanvasOpen(true)}
+                            type="button"
+                            variant="outline"
+                          >
+                            <BrushIcon />
+                            Gerar imagem
+                          </Button>
+                          <Button
+                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
+                            onClick={() => setImageDraftDataUrl(null)}
+                            type="button"
+                            variant="ghost"
+                          >
+                            Limpar rascunho
+                          </Button>
+                          <Button
+                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
+                            onClick={async () => {
+                              if (!selectedPromptId) {
+                                return;
+                              }
+                              await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
+                              clearDraft();
+                              setSelectedPromptId(null);
+                              await refresh();
+                            }}
+                            type="button"
+                            variant="ghost"
+                          >
+                            Devolver para fila
+                          </Button>
+                        </div>
+                      ) : null}
+                      <p className="mr-2 ml-auto text-muted-foreground text-xs">Ctrl + Enter para enviar</p>
+                      {mode === "requester" ? (
+                        <Button
+                          disabled={textDraft.trim().length === 0 || isSubmitting}
+                          onClick={() => void submitNewPrompt(textDraft)}
+                          type="button"
+                        >
+                          <SendIcon />
+                          Enviar
+                        </Button>
+                      ) : (
+                        <Button
+                          disabled={!draftReady || !canRespond(selectedDetail, sessionId) || isSubmitting}
+                          onClick={() => void submitWorkerResponse()}
+                          type="button"
+                        >
+                          <UserPenIcon />
+                          Responder
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {(error || localError) && (
                   <p className="mt-3 text-destructive text-sm">{localError ?? error}</p>
                 )}
@@ -763,6 +963,42 @@ export default function HomePage() {
         open={isShareOpen}
         payload={sharePayload}
       />
+      <Dialog onOpenChange={setAdminDialogOpen} open={adminDialogOpen}>
+        <DialogContent className="max-w-md border-border bg-card">
+          <DialogHeader>
+            <DialogTitle>Desbloquear admin</DialogTitle>
+            <DialogDescription>
+              Pressione Ctrl + &apos; para abrir este atalho e informe a chave de administrador.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            autoFocus
+            onChange={(event) => setAdminKeyInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" || adminBusy) {
+                return;
+              }
+              event.preventDefault();
+              void onAdminUnlock();
+            }}
+            placeholder="Cole a chave admin"
+            type="password"
+            value={adminKeyInput}
+          />
+          {adminError && <p className="text-destructive text-sm">{adminError}</p>}
+          <DialogFooter>
+            <Button onClick={() => setAdminDialogOpen(false)} type="button" variant="outline">
+              Cancelar
+            </Button>
+            <Button disabled={adminBusy || adminKeyInput.trim().length === 0} onClick={() => void onAdminUnlock()} type="button">
+              {adminBusy ? "Validando..." : "Entrar no admin"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+
+
