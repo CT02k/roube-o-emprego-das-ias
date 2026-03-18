@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  AdminPromptDetail,
+  AdminPromptFilters,
+  AdminPromptListResponse,
+  AdminStats,
   CreatePromptInput,
   PromptDetail,
   PromptListItem,
@@ -10,6 +14,25 @@ import {
 
 type PromptListResponse = {
   items: PromptListItem[];
+};
+
+const buildAdminPromptsQuery = (filters: AdminPromptFilters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.requesterSessionId) {
+    params.set("requesterSessionId", filters.requesterSessionId);
+  }
+  if (filters.responderSessionId) {
+    params.set("responderSessionId", filters.responderSessionId);
+  }
+  if (typeof filters.page === "number") params.set("page", String(filters.page));
+  if (typeof filters.pageSize === "number") params.set("pageSize", String(filters.pageSize));
+
+  const query = params.toString();
+  return query.length > 0 ? `/api/admin/prompts?${query}` : "/api/admin/prompts";
 };
 
 const parseError = async (response: Response) => {
@@ -76,8 +99,13 @@ export const api = {
       body: JSON.stringify(payload),
       sessionId,
     }),
-  getPromptDetail: (id: string) =>
-    fetch(`/api/prompts/${id}`, { cache: "no-store" }).then(async (res) => {
+  getPromptDetail: (sessionId: string, id: string) =>
+    fetch(`/api/prompts/${id}`, {
+      cache: "no-store",
+      headers: {
+        "x-session-id": sessionId,
+      },
+    }).then(async (res) => {
       if (!res.ok) {
         throw new Error(await parseError(res));
       }
@@ -118,19 +146,24 @@ export const api = {
       sessionId,
       adminToken,
     }),
-  adminListPrompts: (
-    sessionId: string,
-    adminToken: string,
-    status?: "pending" | "in_progress" | "responded"
-  ) =>
-    requestAdmin<PromptListResponse>(
-      status ? `/api/admin/prompts?status=${status}` : "/api/admin/prompts",
-      {
-        method: "GET",
-        sessionId,
-        adminToken,
-      }
-    ),
+  adminListPrompts: (sessionId: string, adminToken: string, filters?: AdminPromptFilters) =>
+    requestAdmin<AdminPromptListResponse>(buildAdminPromptsQuery(filters), {
+      method: "GET",
+      sessionId,
+      adminToken,
+    }),
+  adminGetPromptDetail: (sessionId: string, adminToken: string, id: string) =>
+    requestAdmin<AdminPromptDetail>(`/api/admin/prompts/${id}`, {
+      method: "GET",
+      sessionId,
+      adminToken,
+    }),
+  adminGetStats: (sessionId: string, adminToken: string) =>
+    requestAdmin<AdminStats>("/api/admin/stats", {
+      method: "GET",
+      sessionId,
+      adminToken,
+    }),
   adminReopenPrompt: (sessionId: string, adminToken: string, id: string) =>
     requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}/reopen`, {
       method: "POST",

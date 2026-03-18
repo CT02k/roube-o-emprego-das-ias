@@ -29,7 +29,7 @@ import { useModeSync } from "@/hooks/use-mode-sync";
 import { usePromptsData } from "@/hooks/use-prompts-data";
 import { useSessionId } from "@/hooks/use-session-id";
 import { api } from "@/lib/client-api";
-import { AppMode, PromptDetail, PromptListItem, SharePayload } from "@/lib/types";
+import { PromptDetail, PromptListItem, SharePayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui-store";
 import {
@@ -49,6 +49,7 @@ import {
   UserPenIcon,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
@@ -73,6 +74,7 @@ const canRespond = (detail: PromptDetail | null, sessionId: string) => {
 };
 
 export default function HomePage() {
+  const router = useRouter();
   const sessionId = useSessionId();
   const { mode, setMode } = useModeSync();
   const selectedPromptId = useUIStore((state) => state.selectedPromptId);
@@ -190,6 +192,9 @@ export default function HomePage() {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (process.env.NEXT_PUBLIC_ENABLE_LEGACY_ADMIN_SHORTCUT !== "true") {
+        return;
+      }
       if (!isAdminShortcut(event)) {
         return;
       }
@@ -379,7 +384,7 @@ export default function HomePage() {
       setAdminUnlocked(true);
       setAdminDialogOpen(false);
       setAdminError(null);
-      setMode("admin");
+      router.push("/admin");
     } catch (err) {
       setAdminError(err instanceof Error ? err.message : "Chave admin invalida.");
     } finally {
@@ -509,7 +514,7 @@ export default function HomePage() {
     draftReady &&
     canRespond(selectedDetail, sessionId) &&
     !isSubmitting;
-  const adminTabVisible = adminGateReady && adminUnlocked;
+  const adminTabVisible = false;
   const adminList = mode === "admin" ? list : [];
 
   const waitingBadge = useMemo(
@@ -621,7 +626,10 @@ export default function HomePage() {
                   </Popover>
                 </div>
               )}
-              <Tabs onValueChange={(value) => setMode(value as AppMode)} value={mode}>
+              <Tabs
+                onValueChange={(value) => setMode(value as "requester" | "worker")}
+                value={mode}
+              >
                 <TabsList>
                   <TabsTrigger value="requester">
                     <Clock3Icon />

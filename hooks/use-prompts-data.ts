@@ -64,7 +64,7 @@ export const usePromptsData = (
           setRequesterThread([]);
         } else {
           const details = await Promise.all(
-            nextList.items.map((item) => api.getPromptDetail(item.id))
+            nextList.items.map((item) => api.getPromptDetail(sessionId, item.id))
           );
           const sorted = [...details].sort(
             (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -74,7 +74,7 @@ export const usePromptsData = (
       } else if (mode === "worker" || mode === "admin") {
         setRequesterThread([]);
         if (selectedPromptId) {
-          const detail = await api.getPromptDetail(selectedPromptId);
+          const detail = await api.getPromptDetail(sessionId, selectedPromptId);
           setSelectedDetail(detail);
         } else {
           setSelectedDetail(null);

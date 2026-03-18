@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
+import { AdminShortcutDialog } from "@/components/admin-shortcut-dialog";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -85,7 +86,10 @@ export default function RootLayout({
           data-site-id="2"
           defer
         />
-        <TooltipProvider>{children}</TooltipProvider>
+        <TooltipProvider>
+          {children}
+          <AdminShortcutDialog />
+        </TooltipProvider>
       </body>
     </html>
   );

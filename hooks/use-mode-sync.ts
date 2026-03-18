@@ -6,9 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 const MODE_KEY = "human-chat-mode";
+type HomeMode = Exclude<AppMode, "admin">;
 
-const isMode = (value: string | null): value is AppMode =>
-  value === "requester" || value === "worker" || value === "admin";
+const isMode = (value: string | null): value is HomeMode =>
+  value === "requester" || value === "worker";
 
 export const useModeSync = () => {
   const mode = useUIStore((state) => state.mode);
@@ -37,7 +38,7 @@ export const useModeSync = () => {
     window.localStorage.setItem(MODE_KEY, "requester");
   }, [pathname, router, setMode]);
 
-  const updateMode = (nextMode: AppMode) => {
+  const updateMode = (nextMode: HomeMode) => {
     setMode(nextMode);
     window.localStorage.setItem(MODE_KEY, nextMode);
     const next = new URLSearchParams(window.location.search);
