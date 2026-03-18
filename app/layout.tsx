@@ -38,9 +38,11 @@ export const metadata: Metadata = {
     siteName: "Roube o emprego das IAs",
     locale: "pt_BR",
     type: "website",
+    images: [{ url: "/og.png" }],
   },
   twitter: {
     card: "summary_large_image",
+    images: ["/og.png"],
     title: "Roube o emprego das IAs",
     description: "Use o mais novo modelo CLT-5.3-Mini de graça, e ajude no combate contra IAs ladronas de emprego.",
   },
