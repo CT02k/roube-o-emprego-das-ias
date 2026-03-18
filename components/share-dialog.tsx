@@ -9,7 +9,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Share2Icon, ShuffleIcon } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  FacebookIcon,
+  GlobeIcon,
+  LinkedinIcon,
+  MessageCircleIcon,
+  SendIcon,
+  Share2Icon,
+  ShuffleIcon,
+} from "lucide-react";
 import NextImage from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { SharePayload } from "@/lib/types";
@@ -26,6 +35,19 @@ const WATERMARK = "roube-o-emprego-das-ias.cfd";
 const CTA_TEXT = "Ajude a roubar os empregos da IA:";
 const MODEL_NAME = "CLT-5.3-Mini";
 const LAST_SHARE_CAPTION_KEY = "share-last-caption-index";
+const SHARE_URL = "https://roube-o-emprego-das-ias.cfd/";
+const SHARE_TEXT = `IAs vão roubar nossos empregos?
+
+A gente resolveu roubar de volta.
+
+Conheça o CLT-5.3-mini — respostas feitas por humanos, em tempo real.
+
+Sem IA.
+Sem escala.
+Só humanos.
+
+🔁 Junte-se a revolução! #roubeoempregodasias
+https://roube-o-emprego-das-ias.cfd/`;
 
 const pickDifferentCaption = (blockedIndex: number) => {
   if (CAPTIONS.length <= 1) {
@@ -111,6 +133,7 @@ export function ShareDialog({ open, onOpenChange, payload, loading, error }: Sha
   const [captionIndex, setCaptionIndex] = useState(0);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   const caption = CAPTIONS[captionIndex];
 
@@ -259,37 +282,82 @@ export function ShareDialog({ open, onOpenChange, payload, loading, error }: Sha
     setCaptionIndex((index) => pickDifferentCaption(index));
   };
 
-  const onShare = async () => {
+  const createShareFile = async () => {
+    if (!imageDataUrl) {
+      return null;
+    }
+
+    const blob = await (await fetch(imageDataUrl)).blob();
+    return new File([blob], "roube-o-emprego-das-ias.png", {
+      type: "image/png",
+    });
+  };
+
+  const downloadImage = () => {
+    if (!imageDataUrl) {
+      return;
+    }
+    const link = document.createElement("a");
+    link.href = imageDataUrl;
+    link.download = "roube-o-emprego-das-ias.png";
+    document.body.append(link);
+    link.click();
+    link.remove();
+  };
+
+  const saveShareUsage = () => {
+    window.localStorage.setItem(LAST_SHARE_CAPTION_KEY, String(captionIndex));
+  };
+
+  const openShareLink = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const onNativeShare = async () => {
     if (!imageDataUrl) {
       return;
     }
     setShareBusy(true);
     try {
-      const blob = await (await fetch(imageDataUrl)).blob();
-      const file = new File([blob], "roube-o-emprego-das-ias.png", {
-        type: "image/png",
-      });
+      const file = await createShareFile();
+      if (!file) {
+        return;
+      }
 
       if (navigator.canShare?.({ files: [file] }) && navigator.share) {
         await navigator.share({
           files: [file],
-          text: caption,
+          text: SHARE_TEXT,
           title: "Roube o emprego das IAs",
         });
-        window.localStorage.setItem(LAST_SHARE_CAPTION_KEY, String(captionIndex));
+        saveShareUsage();
         return;
       }
 
-      const link = document.createElement("a");
-      link.href = imageDataUrl;
-      link.download = "roube-o-emprego-das-ias.png";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.localStorage.setItem(LAST_SHARE_CAPTION_KEY, String(captionIndex));
+      downloadImage();
+      saveShareUsage();
     } finally {
       setShareBusy(false);
+      setShareMenuOpen(false);
     }
+  };
+
+  const onShareToNetwork = (network: "x" | "whatsapp" | "linkedin" | "facebook" | "telegram") => {
+    const encodedText = encodeURIComponent(SHARE_TEXT);
+    const encodedUrl = encodeURIComponent(SHARE_URL);
+
+    const urlByNetwork: Record<typeof network, string> = {
+      x: `https://twitter.com/intent/tweet?text=${encodedText}`,
+      whatsapp: `https://api.whatsapp.com/send?text=${encodedText}`,
+      linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
+      telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`,
+    };
+
+    downloadImage();
+    saveShareUsage();
+    openShareLink(urlByNetwork[network]);
+    setShareMenuOpen(false);
   };
 
   return (
@@ -323,10 +391,48 @@ export function ShareDialog({ open, onOpenChange, payload, loading, error }: Sha
             <ShuffleIcon />
             Gerar outra legenda
           </Button>
-          <Button disabled={!imageDataUrl || loading || shareBusy} onClick={() => void onShare()} type="button">
-            <Share2Icon />
-            Compartilhar
-          </Button>
+          <Popover onOpenChange={setShareMenuOpen} open={shareMenuOpen}>
+            <PopoverTrigger
+              render={
+                <Button disabled={!imageDataUrl || loading || shareBusy} type="button">
+                  <Share2Icon />
+                  Compartilhar
+                </Button>
+              }
+            />
+            <PopoverContent align="end" className="w-[min(92vw,420px)] border-border bg-card p-3">
+              <p className="mb-3 font-medium text-sm">Escolha a rede</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button className="h-12 justify-start text-sm" onClick={() => onShareToNetwork("x")} type="button" variant="outline">
+                  <GlobeIcon />
+                  X / Twitter
+                </Button>
+                <Button className="h-12 justify-start text-sm" onClick={() => onShareToNetwork("whatsapp")} type="button" variant="outline">
+                  <MessageCircleIcon />
+                  WhatsApp
+                </Button>
+                <Button className="h-12 justify-start text-sm" onClick={() => onShareToNetwork("linkedin")} type="button" variant="outline">
+                  <LinkedinIcon />
+                  LinkedIn
+                </Button>
+                <Button className="h-12 justify-start text-sm" onClick={() => onShareToNetwork("facebook")} type="button" variant="outline">
+                  <FacebookIcon />
+                  Facebook
+                </Button>
+                <Button className="h-12 justify-start text-sm" onClick={() => onShareToNetwork("telegram")} type="button" variant="outline">
+                  <SendIcon />
+                  Telegram
+                </Button>
+                <Button className="h-12 justify-start text-sm" onClick={() => void onNativeShare()} type="button">
+                  <Share2Icon />
+                  Outro app (nativo)
+                </Button>
+              </div>
+              <p className="mt-3 text-muted-foreground text-xs">
+                A imagem é baixada automaticamente antes de abrir a rede.
+              </p>
+            </PopoverContent>
+          </Popover>
         </DialogFooter>
       </DialogContent>
     </Dialog>
