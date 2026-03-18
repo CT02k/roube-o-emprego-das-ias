@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Roube o emprego das IAs
 
-## Getting Started
+SPA satirica: pessoas enviam prompts e outras pessoas respondem manualmente, sem IA real.
 
-First, run the development server:
+## Mini tutorial de inicio
 
+### 1) Pre-requisitos
+- Node.js 20+ (recomendado)
+- PostgreSQL rodando localmente
+
+### 2) Instalar dependencias
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3) Configurar banco
+Edite o arquivo `.env` com sua conexao Postgres:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL="postgresql://usuario:senha@localhost:5432/roube_ias?schema=public"
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 4) Gerar client Prisma + criar tabelas
+```bash
+npm run prisma:generate
+npm run prisma:migrate -- --name init
+```
 
-## Learn More
+### 5) Rodar o projeto
+```bash
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Abra `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Scripts uteis
+- `npm run dev`: sobe ambiente local
+- `npm run lint`: valida lint
+- `npm run test`: roda testes (Vitest)
+- `npm run build`: build de producao
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Fluxo rapido para testar
+1. Abra duas abas/janelas no navegador.
+2. Em uma, envie um prompt.
+3. Na outra, troque para modo `Trabalhador`, assuma o prompt e responda.
+4. Volte na primeira para ver o status mudar para `Respondido`.

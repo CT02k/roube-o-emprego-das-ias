@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PromptStatus {
+  pending
+  in_progress
+  responded
+}
+
+enum ResponseType {
+  text
+  image
+}
+
+model Prompt {
+  id                 String         @id @default(cuid())
+  text               String
+  status             PromptStatus   @default(pending)
+  requesterSessionId String
+  claimedBySessionId String?
+  claimedAt          DateTime?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  response           PromptResponse?
+
+  @@index([requesterSessionId, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Asc)])
+}
+
+model PromptResponse {
+  id               String       @id @default(cuid())
+  promptId         String       @unique
+  type             ResponseType
+  text             String?
+  imageDataUrl     String?
+  responderSessionId String
+  createdAt        DateTime     @default(now())
+  prompt           Prompt       @relation(fields: [promptId], references: [id], onDelete: Cascade)
+}
