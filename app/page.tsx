@@ -440,8 +440,8 @@ export default function HomePage() {
       }
 
       clearDraft();
-      setSelectedPromptId(null);
       await refresh();
+      setSelectedPromptId(null);
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : "Falha ao enviar resposta.");
     } finally {
