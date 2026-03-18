@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
+import Script from "next/script";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
@@ -79,6 +80,11 @@ export default function RootLayout({
   return (
     <html className={rootClassName} lang="pt-BR" suppressHydrationWarning>
       <body className={bodyClassName}>
+        <Script
+          src="https://rybbit.recaply.com.br/api/script.js"
+          data-site-id="2"
+          defer
+        />
         <TooltipProvider>{children}</TooltipProvider>
       </body>
     </html>
