@@ -3,6 +3,7 @@ import { getSessionIdFromRequest } from "@/lib/session";
 import { createPromptSchema } from "@/lib/validation";
 import { toPromptListItem } from "@/lib/prompt-helpers";
 import { CLAIM_TTL_MS } from "@/lib/constants";
+import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
 import { publishPromptEvent } from "@/lib/realtime";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -21,12 +22,13 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
+  await releaseExpiredPromptClaims(now);
+
   const prompts =
     view === "requester"
       ? await prisma.prompt.findMany({
           where: {
             requesterSessionId: sessionId,
-            status: "pending",
           },
           include: { response: true },
           orderBy: { createdAt: "desc" },

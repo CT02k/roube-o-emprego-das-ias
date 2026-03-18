@@ -50,7 +50,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  KeyboardEvent as ReactKeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
@@ -108,17 +115,32 @@ export default function HomePage() {
   const requesterInitRef = useRef(false);
   const workerPromptIdsRef = useRef<Set<string>>(new Set());
   const workerInitRef = useRef(false);
+  const previousModeRef = useRef(mode);
   const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
     sessionId,
     mode,
     adminUnlocked,
     adminToken
   );
-  useEffect(() => {
-    if (mode === "requester" && selectedPromptId) {
-      setSelectedPromptId(null);
+
+  const clearSelectedPrompt = useCallback(async () => {
+    if (!selectedPromptId) {
+      return;
     }
-  }, [mode, selectedPromptId, setSelectedPromptId]);
+
+    const shouldRelease =
+      mode === "worker" && sessionId && canRespond(selectedDetail, sessionId);
+
+    if (shouldRelease) {
+      await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
+    }
+
+    clearDraft();
+    setSelectedPromptId(null);
+    if (shouldRelease) {
+      await refresh();
+    }
+  }, [clearDraft, mode, refresh, selectedDetail, selectedPromptId, sessionId, setSelectedPromptId]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !sessionId) {
@@ -403,6 +425,35 @@ export default function HomePage() {
     setMode("requester");
   };
 
+  useEffect(() => {
+    const previousMode = previousModeRef.current;
+    previousModeRef.current = mode;
+
+    if (!selectedPromptId) {
+      return;
+    }
+
+    if (
+      previousMode === "worker" &&
+      mode !== "worker" &&
+      sessionId &&
+      canRespond(selectedDetail, sessionId)
+    ) {
+      void (async () => {
+        await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
+        clearDraft();
+        setSelectedPromptId(null);
+        await refresh();
+      })();
+      return;
+    }
+
+    if (mode === "requester") {
+      clearDraft();
+      setSelectedPromptId(null);
+    }
+  }, [clearDraft, mode, refresh, selectedDetail, selectedPromptId, sessionId, setSelectedPromptId]);
+
   const selectPrompt = async (item: PromptListItem) => {
     setLocalError(null);
     setSelectedPromptId(item.id);
@@ -556,10 +607,7 @@ export default function HomePage() {
             <div className="flex w-full items-center gap-2 sm:w-auto">
               {(isWorkerWithSelection || isAdminWithSelection) && (
                 <Button
-                  onClick={() => {
-                    clearDraft();
-                    setSelectedPromptId(null);
-                  }}
+                  onClick={() => void clearSelectedPrompt()}
                   type="button"
                   variant="outline"
                 >

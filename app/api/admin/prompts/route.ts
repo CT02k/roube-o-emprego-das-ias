@@ -1,6 +1,7 @@
 import { PromptStatus } from "@/lib/generated/prisma/client";
 import { forbiddenAdminResponse, isAdminAuthorized } from "@/lib/admin-auth";
 import { toAdminPromptListItem } from "@/lib/prompt-helpers";
+import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -35,6 +36,8 @@ export async function GET(request: NextRequest) {
   if (!isAdminAuthorized(request)) {
     return forbiddenAdminResponse();
   }
+
+  await releaseExpiredPromptClaims();
 
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get("status");

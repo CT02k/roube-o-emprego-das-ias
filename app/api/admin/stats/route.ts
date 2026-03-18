@@ -1,4 +1,5 @@
 import { forbiddenAdminResponse, isAdminAuthorized } from "@/lib/admin-auth";
+import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -6,6 +7,8 @@ export async function GET(request: NextRequest) {
   if (!isAdminAuthorized(request)) {
     return forbiddenAdminResponse();
   }
+
+  await releaseExpiredPromptClaims();
 
   const now = new Date();
   const startOfDayUtc = new Date(
