@@ -20,10 +20,9 @@ export const metadata: Metadata = {
     default: "Roube o emprego das IAs",
     template: "%s | Roube o emprego das IAs",
   },
-  description: "SPA satirica onde humanos respondem no lugar de IAs.",
+  description: "Use o mais novo modelo CLT-5.3-Mini de graça, e ajude no combate contra IAs ladronas de emprego.",
   applicationName: "Roube o emprego das IAs",
   keywords: [
-    "satira",
     "chat humano",
     "sem IA",
     "crowdsourced answers",
@@ -34,7 +33,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Roube o emprego das IAs",
-    description: "Sem IA real: humanos respondendo prompts manualmente.",
+    description: "Use o mais novo modelo CLT-5.3-Mini de graça, e ajude no combate contra IAs ladronas de emprego.",
     url: "/",
     siteName: "Roube o emprego das IAs",
     locale: "pt_BR",
@@ -43,7 +42,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Roube o emprego das IAs",
-    description: "Sem IA real: humanos respondendo prompts manualmente.",
+    description: "Use o mais novo modelo CLT-5.3-Mini de graça, e ajude no combate contra IAs ladronas de emprego.",
   },
   robots: {
     index: true,
