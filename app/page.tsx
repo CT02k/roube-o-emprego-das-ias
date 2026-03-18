@@ -45,6 +45,7 @@ const SATIRE_TEXTS = [
 ];
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
+const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
 
 const statusMeta = (item: Pick<PromptListItem, "status">) => {
   if (item.status === "responded") {
@@ -122,6 +123,12 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (!NATIVE_SHARE_ENABLED) {
+      setShareAvailable(false);
+      setShareAvailabilityLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const checkShareAvailability = async () => {
@@ -391,7 +398,28 @@ export default function HomePage() {
                   Voltar para fila
                 </Button>
               )}
-              {shareAvailable ? (
+              {!NATIVE_SHARE_ENABLED ? (
+                <div
+                  onBlur={() => setShareHintOpen(false)}
+                  onFocus={() => setShareHintOpen(true)}
+                  onMouseEnter={() => setShareHintOpen(true)}
+                  onMouseLeave={() => setShareHintOpen(false)}
+                >
+                  <Popover onOpenChange={setShareHintOpen} open={shareHintOpen}>
+                    <PopoverTrigger
+                      render={
+                        <Button disabled type="button" variant="outline">
+                          <Share2Icon />
+                          Compartilhar
+                        </Button>
+                      }
+                    />
+                    <PopoverContent align="end" className="text-sm">
+                      Compartilhamento nativo desativado no ambiente.
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              ) : shareAvailable ? (
                 <Button
                   disabled={shareAvailabilityLoading}
                   onClick={() => void onOpenShare()}
@@ -730,6 +758,7 @@ export default function HomePage() {
       <ShareDialog
         error={shareError}
         loading={shareLoading}
+        nativeShareEnabled={NATIVE_SHARE_ENABLED}
         onOpenChange={setShareOpen}
         open={isShareOpen}
         payload={sharePayload}
