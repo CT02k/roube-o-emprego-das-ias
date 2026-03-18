@@ -8,6 +8,7 @@ import {
   CreatePromptInput,
   PromptDetail,
   PromptListItem,
+  PromptThreadResponse,
   SharePayload,
   SubmitResponseInput,
 } from "@/lib/types";
@@ -90,6 +91,11 @@ async function requestAdmin<T>(
 export const api = {
   listPrompts: (sessionId: string, view: "requester" | "worker") =>
     request<PromptListResponse>(`/api/prompts?view=${view}`, {
+      method: "GET",
+      sessionId,
+    }),
+  getRequesterThread: (sessionId: string) =>
+    request<PromptThreadResponse>(`/api/prompts/thread`, {
       method: "GET",
       sessionId,
     }),

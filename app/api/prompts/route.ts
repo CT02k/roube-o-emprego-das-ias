@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
       ? await prisma.prompt.findMany({
           where: {
             requesterSessionId: sessionId,
+            status: {
+              in: ["pending", "in_progress"],
+            },
           },
           include: { response: true },
           orderBy: { createdAt: "desc" },

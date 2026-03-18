@@ -81,6 +81,10 @@ export type AdminPromptListResponse = {
   pagination: PaginationMeta;
 };
 
+export type PromptThreadResponse = {
+  items: PromptDetail[];
+};
+
 export type AdminStats = {
   pending: number;
   inProgress: number;

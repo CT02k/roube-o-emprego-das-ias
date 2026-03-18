@@ -60,17 +60,8 @@ export const usePromptsData = (
 
       if (mode === "requester") {
         setSelectedDetail(null);
-        if (nextList.items.length === 0) {
-          setRequesterThread([]);
-        } else {
-          const details = await Promise.all(
-            nextList.items.map((item) => api.getPromptDetail(sessionId, item.id))
-          );
-          const sorted = [...details].sort(
-            (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
-          setRequesterThread(sorted);
-        }
+        const thread = await api.getRequesterThread(sessionId);
+        setRequesterThread(thread.items);
       } else if (mode === "worker" || mode === "admin") {
         setRequesterThread([]);
         if (selectedPromptId) {
