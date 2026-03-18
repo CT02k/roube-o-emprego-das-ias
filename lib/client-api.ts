@@ -12,8 +12,6 @@ type PromptListResponse = {
   items: PromptListItem[];
 };
 
-const ADMIN_KEY = "010a381a5b837f16ee15a1f261a65f3e07cc5838367ffae6f3b9b14cbae48081";
-
 const parseError = async (response: Response) => {
   const body = await response.json().catch(() => null);
   const message = body?.error;
@@ -44,12 +42,16 @@ async function request<T>(
   return response.json() as Promise<T>;
 }
 
-async function requestAdmin<T>(input: RequestInfo | URL, init: RequestInit): Promise<T> {
+async function requestAdmin<T>(
+  input: RequestInfo | URL,
+  init: RequestInit & { sessionId: string; adminToken: string }
+): Promise<T> {
   const response = await fetch(input, {
     ...init,
     headers: {
       "Content-Type": "application/json",
-      "x-admin-key": ADMIN_KEY,
+      "x-session-id": init.sessionId,
+      "x-admin-token": init.adminToken,
       ...init.headers,
     },
     cache: "no-store",
@@ -104,20 +106,42 @@ export const api = {
       method: "GET",
       sessionId,
     }),
-  adminListPrompts: (status?: "pending" | "in_progress" | "responded") =>
+  verifyAdminCode: (sessionId: string, code: string) =>
+    request<{ token: string }>("/api/admin/auth/verify", {
+      method: "POST",
+      sessionId,
+      body: JSON.stringify({ code }),
+    }),
+  checkAdminAuth: (sessionId: string, adminToken: string) =>
+    requestAdmin<{ ok: true }>("/api/admin/auth/check", {
+      method: "GET",
+      sessionId,
+      adminToken,
+    }),
+  adminListPrompts: (
+    sessionId: string,
+    adminToken: string,
+    status?: "pending" | "in_progress" | "responded"
+  ) =>
     requestAdmin<PromptListResponse>(
       status ? `/api/admin/prompts?status=${status}` : "/api/admin/prompts",
       {
         method: "GET",
+        sessionId,
+        adminToken,
       }
     ),
-  adminReopenPrompt: (id: string) =>
+  adminReopenPrompt: (sessionId: string, adminToken: string, id: string) =>
     requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}/reopen`, {
       method: "POST",
       body: JSON.stringify({}),
+      sessionId,
+      adminToken,
     }),
-  adminDeletePrompt: (id: string) =>
+  adminDeletePrompt: (sessionId: string, adminToken: string, id: string) =>
     requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}`, {
       method: "DELETE",
+      sessionId,
+      adminToken,
     }),
 };

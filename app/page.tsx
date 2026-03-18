@@ -53,8 +53,7 @@ import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useSta
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
-const ADMIN_STORAGE_KEY = "human-chat-admin-unlocked";
-const ADMIN_KEY = "010a381a5b837f16ee15a1f261a65f3e07cc5838367ffae6f3b9b14cbae48081";
+const ADMIN_STORAGE_KEY = "human-chat-admin-token";
 
 const statusMeta = (item: Pick<PromptListItem, "status">) => {
   if (item.status === "responded") {
@@ -97,6 +96,7 @@ export default function HomePage() {
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>("default");
   const [adminUnlocked, setAdminUnlocked] = useState(false);
+  const [adminToken, setAdminToken] = useState<string | null>(null);
   const [adminGateReady, setAdminGateReady] = useState(false);
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
   const [adminKeyInput, setAdminKeyInput] = useState("");
@@ -109,7 +109,8 @@ export default function HomePage() {
   const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
     sessionId,
     mode,
-    adminUnlocked
+    adminUnlocked,
+    adminToken
   );
   useEffect(() => {
     if (mode === "requester" && selectedPromptId) {
@@ -118,13 +119,46 @@ export default function HomePage() {
   }, [mode, selectedPromptId, setSelectedPromptId]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !sessionId) {
       return;
     }
 
-    setAdminUnlocked(window.localStorage.getItem(ADMIN_STORAGE_KEY) === "1");
-    setAdminGateReady(true);
-  }, []);
+    let cancelled = false;
+    const storedToken = window.localStorage.getItem(ADMIN_STORAGE_KEY);
+
+    if (!storedToken) {
+      setAdminToken(null);
+      setAdminUnlocked(false);
+      setAdminGateReady(true);
+      return;
+    }
+
+    const validate = async () => {
+      try {
+        await api.checkAdminAuth(sessionId, storedToken);
+        if (!cancelled) {
+          setAdminToken(storedToken);
+          setAdminUnlocked(true);
+        }
+      } catch {
+        window.localStorage.removeItem(ADMIN_STORAGE_KEY);
+        if (!cancelled) {
+          setAdminToken(null);
+          setAdminUnlocked(false);
+        }
+      } finally {
+        if (!cancelled) {
+          setAdminGateReady(true);
+        }
+      }
+    };
+
+    void validate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId]);
 
   useEffect(() => {
     if (!adminGateReady) {
@@ -339,16 +373,15 @@ export default function HomePage() {
   const onAdminUnlock = async () => {
     setAdminBusy(true);
     try {
-      if (adminKeyInput.trim() !== ADMIN_KEY) {
-        setAdminError("Chave admin invalida.");
-        return;
-      }
-
-      window.localStorage.setItem(ADMIN_STORAGE_KEY, "1");
+      const result = await api.verifyAdminCode(sessionId, adminKeyInput.trim());
+      window.localStorage.setItem(ADMIN_STORAGE_KEY, result.token);
+      setAdminToken(result.token);
       setAdminUnlocked(true);
       setAdminDialogOpen(false);
       setAdminError(null);
       setMode("admin");
+    } catch (err) {
+      setAdminError(err instanceof Error ? err.message : "Chave admin invalida.");
     } finally {
       setAdminBusy(false);
     }
@@ -356,6 +389,7 @@ export default function HomePage() {
 
   const onAdminLogout = () => {
     window.localStorage.removeItem(ADMIN_STORAGE_KEY);
+    setAdminToken(null);
     setAdminUnlocked(false);
     setAdminDialogOpen(false);
     setAdminKeyInput("");
@@ -387,13 +421,13 @@ export default function HomePage() {
   };
 
   const reopenByAdmin = async () => {
-    if (!selectedPromptId) {
+    if (!selectedPromptId || !adminToken) {
       return;
     }
 
     setSubmitting(true);
     try {
-      await api.adminReopenPrompt(selectedPromptId);
+      await api.adminReopenPrompt(sessionId, adminToken, selectedPromptId);
       setSelectedPromptId(null);
       await refresh();
     } catch (err) {
@@ -404,13 +438,13 @@ export default function HomePage() {
   };
 
   const deleteByAdmin = async () => {
-    if (!selectedPromptId) {
+    if (!selectedPromptId || !adminToken) {
       return;
     }
 
     setSubmitting(true);
     try {
-      await api.adminDeletePrompt(selectedPromptId);
+      await api.adminDeletePrompt(sessionId, adminToken, selectedPromptId);
       setSelectedPromptId(null);
       await refresh();
     } catch (err) {
@@ -856,7 +890,7 @@ export default function HomePage() {
                       Moderacao: reabra prompts ou exclua definitivamente.
                     </p>
                     <Button
-                      disabled={!selectedPromptId || isSubmitting}
+                      disabled={!selectedPromptId || !adminToken || isSubmitting}
                       onClick={() => void reopenByAdmin()}
                       type="button"
                       variant="outline"
@@ -865,7 +899,7 @@ export default function HomePage() {
                       Reabrir para fila
                     </Button>
                     <Button
-                      disabled={!selectedPromptId || isSubmitting}
+                      disabled={!selectedPromptId || !adminToken || isSubmitting}
                       onClick={() => void deleteByAdmin()}
                       type="button"
                       variant="destructive"

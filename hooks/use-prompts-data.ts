@@ -17,7 +17,8 @@ type UsePromptsDataResult = {
 export const usePromptsData = (
   sessionId: string,
   mode: AppMode,
-  adminUnlocked = false
+  adminUnlocked = false,
+  adminToken: string | null = null
 ): UsePromptsDataResult => {
   const selectedPromptId = useUIStore((state) => state.selectedPromptId);
   const [list, setList] = useState<PromptListItem[]>([]);
@@ -39,7 +40,7 @@ export const usePromptsData = (
       return;
     }
 
-    if (mode === "admin" && !adminUnlocked) {
+    if (mode === "admin" && (!adminUnlocked || !adminToken)) {
       setList([]);
       setSelectedDetail(null);
       setRequesterThread([]);
@@ -52,7 +53,7 @@ export const usePromptsData = (
     try {
       const nextList =
         mode === "admin"
-          ? await api.adminListPrompts()
+          ? await api.adminListPrompts(sessionId, adminToken!)
           : await api.listPrompts(sessionId, mode);
       setList(nextList.items);
       setError(null);
@@ -93,7 +94,7 @@ export const usePromptsData = (
         void refreshRef.current();
       }
     }
-  }, [sessionId, mode, selectedPromptId, adminUnlocked]);
+  }, [sessionId, mode, selectedPromptId, adminUnlocked, adminToken]);
 
   useEffect(() => {
     refreshRef.current = refresh;
