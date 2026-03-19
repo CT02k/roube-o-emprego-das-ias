@@ -208,6 +208,20 @@ export function ShareDialog({
     ctx.font = "500 32px 'Space Grotesk', sans-serif";
     wrapText(ctx, clampText(payload.promptText, 220), boxX + 28, promptY + 88, boxW - 56, 36, 2);
 
+    ctx.fillStyle = "#737373";
+    ctx.font = "600 20px 'IBM Plex Mono', monospace";
+    ctx.fillText(WATERMARK, 760, 840);
+
+    ctx.fillStyle = "#262626";
+    drawRoundedRect(ctx, 70, 785, 1060, 72);
+    ctx.fill();
+    ctx.fillStyle = "#d4d4d4";
+    ctx.font = "600 26px 'Space Grotesk', sans-serif";
+    ctx.fillText(CTA_TEXT, 98, 830);
+    ctx.fillStyle = "#fafafa";
+    ctx.font = "700 26px 'IBM Plex Mono', monospace";
+    ctx.fillText(WATERMARK, 585, 830);
+
     if (!isImageResponse) {
       wrapText(
         ctx,
@@ -256,20 +270,6 @@ export function ShareDialog({
       setImageDataUrl(canvas.toDataURL("image/png"));
     };
     img.src = imageData;
-
-    ctx.fillStyle = "#737373";
-    ctx.font = "600 20px 'IBM Plex Mono', monospace";
-    ctx.fillText(WATERMARK, 760, 840);
-
-    ctx.fillStyle = "#262626";
-    drawRoundedRect(ctx, 70, 785, 1060, 72);
-    ctx.fill();
-    ctx.fillStyle = "#d4d4d4";
-    ctx.font = "600 26px 'Space Grotesk', sans-serif";
-    ctx.fillText(CTA_TEXT, 98, 830);
-    ctx.fillStyle = "#fafafa";
-    ctx.font = "700 26px 'IBM Plex Mono', monospace";
-    ctx.fillText(WATERMARK, 585, 830);
 
     return () => {
       active = false;
