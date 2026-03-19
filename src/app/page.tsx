@@ -484,7 +484,7 @@ export default function HomePage() {
                     href="/historico"
                   >
                     <GalleryVerticalEndIcon />
-                    Ranking
+                    Histórico Público
                   </Link>
                 </div>
                 <Tabs
