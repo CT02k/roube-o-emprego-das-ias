@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 
 const ADMIN_STORAGE_KEY = "human-chat-admin-token";
+type HomeMode = Exclude<AppMode, "admin">;
 
 type UseAdminAuthParams = {
   sessionId: string;
   mode: AppMode;
-  setMode: (mode: AppMode) => void;
+  setMode: (mode: HomeMode) => void;
   setSelectedPromptId: (id: string | null) => void;
 };
 
@@ -24,6 +25,7 @@ type UseAdminAuthResult = {
   setAdminKeyInput: Dispatch<SetStateAction<string>>;
   adminError: string | null;
   adminBusy: boolean;
+  openAdminDialog: () => void;
   onAdminUnlock: () => Promise<void>;
   onAdminLogout: () => void;
 };
@@ -96,6 +98,12 @@ export const useAdminAuth = ({
     }
   }, [adminGateReady, adminUnlocked, mode, setMode, setSelectedPromptId]);
 
+  const openAdminDialog = () => {
+    setAdminError(null);
+    setAdminKeyInput("");
+    setAdminDialogOpen(true);
+  };
+
   const onAdminUnlock = async () => {
     setAdminBusy(true);
     try {
@@ -134,6 +142,7 @@ export const useAdminAuth = ({
     setAdminKeyInput,
     adminError,
     adminBusy,
+    openAdminDialog,
     onAdminUnlock,
     onAdminLogout,
   };

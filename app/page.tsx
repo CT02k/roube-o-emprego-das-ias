@@ -110,6 +110,7 @@ export default function HomePage() {
     setAdminKeyInput,
     adminError,
     adminBusy,
+    openAdminDialog,
     onAdminUnlock,
     onAdminLogout,
   } = useAdminAuth({
@@ -181,14 +182,12 @@ export default function HomePage() {
         return;
       }
       event.preventDefault();
-      setAdminError(null);
-      setAdminKeyInput("");
-      setAdminDialogOpen(true);
+      openAdminDialog();
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [setAdminDialogOpen, setAdminKeyInput]);
+  }, [openAdminDialog]);
 
   useEffect(() => {
     if (!NATIVE_SHARE_ENABLED) {
