@@ -1,6 +1,6 @@
 # Roube o emprego das IAs
 
-SPA satirica: pessoas enviam prompts e outras pessoas respondem manualmente, sem IA real.
+Aplicação SPA em Next.JS: pessoas enviam prompts e outras pessoas respondem manualmente, sem IA real.
 
 ## Mini tutorial de inicio
 
@@ -14,10 +14,12 @@ npm install
 ```
 
 ### 3) Configurar banco
-Edite o arquivo `.env` com sua conexao Postgres:
+Edite o arquivo `.env` com sua conexao Postgres e as credenciais de admin:
 
 ```env
 DATABASE_URL="postgresql://usuario:senha@localhost:5432/roube_ias?schema=public"
+ADMIN_CODE="seu-codigo-admin"
+ADMIN_TOKEN_SECRET="um-segredo-grande-e-aleatorio"
 ```
 
 ### 4) Gerar client Prisma + criar tabelas
