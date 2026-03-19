@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 
 type UsePromptEventsParams = {
   sessionId: string;
@@ -15,6 +15,18 @@ export const usePromptEvents = ({
   onOpen,
   onError,
 }: UsePromptEventsParams) => {
+  const handleMessage = useEffectEvent(() => {
+    onMessage();
+  });
+
+  const handleOpen = useEffectEvent(() => {
+    onOpen?.();
+  });
+
+  const handleError = useEffectEvent(() => {
+    onError?.();
+  });
+
   useEffect(() => {
     if (!sessionId) {
       return;
@@ -23,19 +35,19 @@ export const usePromptEvents = ({
     const source = new EventSource("/api/events");
 
     source.onmessage = () => {
-      onMessage();
+      handleMessage();
     };
 
     source.onerror = () => {
-      onError?.();
+      handleError();
     };
 
     source.onopen = () => {
-      onOpen?.();
+      handleOpen();
     };
 
     return () => {
       source.close();
     };
-  }, [onError, onMessage, onOpen, sessionId]);
+  }, [sessionId]);
 };
