@@ -27,7 +27,6 @@ export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
         <span className="text-muted-foreground text-xs">{formatDate(item.createdAt)}</span>
       </div>
       <Link className="space-y-2" href={`/historico/${item.id}`}>
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">Pergunta</p>
         <p className="line-clamp-3 text-base font-medium text-foreground">{item.promptText}</p>
       </Link>
       <Link
@@ -36,13 +35,13 @@ export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
       >
         <PromptResponse alt="Resposta humana do historico" response={item.response} />
       </Link>
-      <div className="flex items-center justify-between gap-3">
-        <Link
+      <div className="flex items-center justify-end gap-3">
+        {/* <Link
           className="text-sm text-primary transition-transform group-hover:translate-x-0.5"
           href={`/historico/${item.id}`}
         >
           Abrir resposta
-        </Link>
+        </Link> */}
         <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
       </div>
     </article>

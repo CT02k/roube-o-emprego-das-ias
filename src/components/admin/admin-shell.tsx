@@ -1,10 +1,22 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Button, buttonVariants } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { ADMIN_TOKEN_STORAGE_KEY } from "@/lib/admin-client";
 import { cn } from "@/lib/utils";
-import { BarChart3Icon, LogOutIcon, MenuIcon, MessagesSquareIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  HomeIcon,
+  LogOutIcon,
+  MenuIcon,
+  MessagesSquareIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
@@ -28,8 +40,13 @@ function NavContent({ pathname, onNavigate, onLogout }: NavContentProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="px-3 py-3">
-        <p className="font-semibold text-sm">Admin Panel</p>
-        <p className="text-muted-foreground text-xs">Roube o emprego das IAs</p>
+        <Link
+          className="font-semibold text-sm transition-colors hover:text-primary"
+          href="/"
+        >
+          Roube o emprego das IAs
+        </Link>
+        <p className="text-muted-foreground text-xs">Admin Panel</p>
       </div>
       <nav className="flex-1 space-y-1 px-2">
         {navItems.map((item) => {
@@ -40,7 +57,7 @@ function NavContent({ pathname, onNavigate, onLogout }: NavContentProps) {
                 "flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition",
                 active
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
               href={item.href}
               key={item.href}
@@ -53,7 +70,11 @@ function NavContent({ pathname, onNavigate, onLogout }: NavContentProps) {
         })}
       </nav>
       <div className="p-2">
-        <Button className="w-full justify-start" onClick={onLogout} variant="outline">
+        <Button
+          className="w-full justify-start"
+          onClick={onLogout}
+          variant="outline"
+        >
           <LogOutIcon className="size-4" />
           Sair do admin
         </Button>
@@ -104,10 +125,26 @@ export function AdminShell({ children }: AdminShellProps) {
                 {pathname === "/admin/messages" ? "Messages" : "Overview"}
               </p>
             </div>
-            <Button className="hidden md:inline-flex" onClick={onLogout} variant="outline">
-              <LogOutIcon className="size-4" />
-              Sair do admin
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "hidden md:inline-flex",
+                )}
+                href="/"
+              >
+                <HomeIcon className="size-4" />
+                Site
+              </Link>
+              <Button
+                className="hidden md:inline-flex"
+                onClick={onLogout}
+                variant="outline"
+              >
+                <LogOutIcon className="size-4" />
+                Sair do admin
+              </Button>
+            </div>
           </header>
           <main className="flex-1 p-4 md:p-6">{children}</main>
         </div>

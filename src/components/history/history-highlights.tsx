@@ -11,9 +11,10 @@ import { useEffect, useState } from "react";
 
 type HistoryHighlightsProps = {
   sessionId: string;
+  className?: string;
 };
 
-export function HistoryHighlights({ sessionId }: HistoryHighlightsProps) {
+export function HistoryHighlights({ sessionId, className }: HistoryHighlightsProps) {
   const [items, setItems] = useState<HistoryListItem[]>([]);
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export function HistoryHighlights({ sessionId }: HistoryHighlightsProps) {
 
     const load = async () => {
       try {
-        const result = await api.listHistory("top", sessionId);
+        const result = await api.listHistory("hot", sessionId);
         if (!cancelled) {
           setItems(result.items.slice(0, 3));
         }
@@ -44,7 +45,7 @@ export function HistoryHighlights({ sessionId }: HistoryHighlightsProps) {
   }
 
   return (
-    <section className="space-y-3 rounded-sm border border-border bg-card p-4">
+    <section className={cn("space-y-3 rounded-sm border border-border bg-card p-4", className)}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -52,7 +53,7 @@ export function HistoryHighlights({ sessionId }: HistoryHighlightsProps) {
             Em alta
           </div>
           <p className="mt-1 text-sm text-foreground">
-            Respostas que a galera esta empurrando para o topo.
+            Respostas que a galera está empurrando para o topo.
           </p>
         </div>
         <Link className={buttonVariants({ variant: "outline", size: "sm" })} href="/historico">
@@ -60,7 +61,7 @@ export function HistoryHighlights({ sessionId }: HistoryHighlightsProps) {
         </Link>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-1">
         {items.map((item) => (
           <Link
             className="rounded-sm border border-border bg-background/70 p-4 transition-colors hover:bg-muted/30"

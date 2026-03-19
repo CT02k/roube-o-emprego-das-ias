@@ -111,9 +111,72 @@ const toHistoryItem = (
 });
 
 export const listHistory = async (
-  sort: HistorySort = "recent",
+  sort: HistorySort = "hot",
   sessionId?: string | null
 ): Promise<HistoryListItem[]> => {
+  if (sort === "hot") {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const voteGroups = await prisma.promptResponseVote.groupBy({
+      by: ["responseId"],
+      where: {
+        createdAt: {
+          gte: since,
+        },
+      },
+      _count: {
+        responseId: true,
+      },
+      orderBy: {
+        _count: {
+          responseId: "desc",
+        },
+      },
+      take: 100,
+    });
+
+    const responses = await prisma.promptResponse.findMany({
+      include: {
+        prompt: {
+          select: {
+            id: true,
+            text: true,
+          },
+        },
+        votes: {
+          where: {
+            sessionId: sessionId ?? "__anonymous__",
+          },
+          select: {
+            id: true,
+          },
+          take: 1,
+        },
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take: 100,
+    });
+
+    const hotScoreByResponseId = new Map(
+      voteGroups.map((group) => [group.responseId, group._count.responseId])
+    );
+
+    const sortedResponses = [...responses].sort((left, right) => {
+      const leftScore = hotScoreByResponseId.get(left.id) ?? 0;
+      const rightScore = hotScoreByResponseId.get(right.id) ?? 0;
+
+      if (rightScore !== leftScore) {
+        return rightScore - leftScore;
+      }
+
+      return right.createdAt.getTime() - left.createdAt.getTime();
+    });
+
+    const responsesById = new Map(responses.map((response) => [response.id, response]));
+    void responsesById;
+
+    return sortedResponses.map(toHistoryItem);
+  }
+
   const responses = await prisma.promptResponse.findMany({
     include: {
       prompt: {

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 const querySchema = z.object({
-  sort: z.enum(["recent", "top"]).default("recent"),
+  sort: z.enum(["recent", "hot", "top"]).default("hot"),
 });
 
 export async function GET(request: Request) {

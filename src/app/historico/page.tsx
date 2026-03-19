@@ -1,38 +1,34 @@
 import { HistoryFeed } from "@/components/history/history-feed";
+import { PublicHeader } from "@/components/site/public-header";
 import { listHistory } from "@/lib/prompt-service";
-import { ArrowLeftIcon, GalleryVerticalEndIcon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import Link from "next/link";
 
 export const metadata = {
-  title: "Histórico",
+  title: "Ranking",
 };
 
 const linkButtonClassName =
   "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-all hover:bg-muted hover:text-foreground";
 
 export default async function HistoryPage() {
-  const items = await listHistory("recent");
+  const items = await listHistory("hot");
 
   return (
     <main className="mx-auto flex min-h-svh w-full max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6">
-      <header className="flex flex-col gap-4 rounded-sm border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <GalleryVerticalEndIcon className="size-4" />
-            Histórico publico
-          </div>
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Ranking de respostas</h1>
-        
-          </div>
-        </div>
-        <Link className={linkButtonClassName} href="/">
-          <ArrowLeftIcon />
-          Voltar
-        </Link>
-      </header>
+      <PublicHeader
+        actions={
+          <Link className={linkButtonClassName} href="/">
+            <ArrowLeftIcon />
+            Voltar
+          </Link>
+        }
+        currentPage="Ranking"
+        description="Em alta mostra votos recentes. Mais votados mostra o total acumulado."
+        title="Ranking"
+      />
 
-      <HistoryFeed initialItems={items} initialSort="recent" />
+      <HistoryFeed initialItems={items} initialSort="hot" />
     </main>
   );
 }

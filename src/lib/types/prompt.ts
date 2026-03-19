@@ -75,4 +75,4 @@ export type HistoryDetail = {
   viewerHasUpvoted: boolean;
 };
 
-export type HistorySort = "recent" | "top";
+export type HistorySort = "recent" | "hot" | "top";

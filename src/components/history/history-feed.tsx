@@ -5,7 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useSessionId } from "@/hooks/use-session-id";
 import { api } from "@/lib/client-api";
 import type { HistoryListItem, HistorySort } from "@/lib/types";
-import { ArrowDownWideNarrowIcon, FlameIcon, LoaderCircleIcon } from "lucide-react";
+import {
+  ArrowDownWideNarrowIcon,
+  ArrowUpWideNarrowIcon,
+  FlameIcon,
+  LoaderCircleIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 type HistoryFeedProps = {
@@ -49,7 +54,7 @@ export function HistoryFeed({ initialItems, initialSort }: HistoryFeedProps) {
         item.id === itemId ? { ...item, viewerHasUpvoted, upvotesCount } : item
       );
 
-      if (sort !== "top") {
+      if (sort === "recent") {
         return next;
       }
 
@@ -67,20 +72,28 @@ export function HistoryFeed({ initialItems, initialSort }: HistoryFeedProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          onClick={() => setSort("recent")}
+          onClick={() => setSort("hot")}
           type="button"
-          variant={sort === "recent" ? "default" : "outline"}
+          variant={sort === "hot" ? "default" : "outline"}
         >
-          <ArrowDownWideNarrowIcon />
-          Recentes
+          <FlameIcon />
+          Em alta
         </Button>
         <Button
           onClick={() => setSort("top")}
           type="button"
           variant={sort === "top" ? "default" : "outline"}
         >
-          <FlameIcon />
-          Em alta
+          <ArrowUpWideNarrowIcon />
+          Mais votados
+        </Button>
+        <Button
+          onClick={() => setSort("recent")}
+          type="button"
+          variant={sort === "recent" ? "default" : "outline"}
+        >
+          <ArrowDownWideNarrowIcon />
+          Recentes
         </Button>
         {isLoading && (
           <span className="inline-flex items-center gap-2 text-muted-foreground text-sm">
