@@ -372,7 +372,7 @@ export default function HomePage() {
         className="relative min-h-svh w-full transition-colors duration-500"
         data-mode={mode}
       >
-        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 overflow-x-hidden px-4 py-4 sm:px-6">
+        <main className="relative z-10 mx-auto flex w-full max-w-344 flex-col gap-5 overflow-x-hidden px-4 py-4 sm:px-6">
           <PublicHeader
             currentPage="Inicio"
             description={waitingBadge}
