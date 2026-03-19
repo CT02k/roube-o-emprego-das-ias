@@ -30,6 +30,7 @@ import { useModeSync } from "@/hooks/use-mode-sync";
 import { useNotifications } from "@/hooks/use-notifications";
 import { usePromptsData } from "@/hooks/use-prompts-data";
 import { useSessionId } from "@/hooks/use-session-id";
+import { useWorkerClaim } from "@/hooks/use-worker-claim";
 import { api } from "@/lib/client-api";
 import { PromptDetail, PromptListItem, SharePayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -53,10 +54,8 @@ import {
 import Image from "next/image";
 import {
   KeyboardEvent as ReactKeyboardEvent,
-  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 
@@ -100,7 +99,6 @@ export default function HomePage() {
   const [shareHintOpen, setShareHintOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const previousModeRef = useRef(mode);
   const {
     adminUnlocked,
     adminToken,
@@ -136,25 +134,16 @@ export default function HomePage() {
     selectedPromptId,
     onError: setLocalError,
   });
-
-  const clearSelectedPrompt = useCallback(async () => {
-    if (!selectedPromptId) {
-      return;
-    }
-
-    const shouldRelease =
-      mode === "worker" && sessionId && canRespond(selectedDetail, sessionId);
-
-    if (shouldRelease) {
-      await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
-    }
-
-    clearDraft();
-    setSelectedPromptId(null);
-    if (shouldRelease) {
-      await refresh();
-    }
-  }, [clearDraft, mode, refresh, selectedDetail, selectedPromptId, sessionId, setSelectedPromptId]);
+  const { clearSelectedPrompt, selectPrompt, releaseCurrentPrompt } = useWorkerClaim({
+    mode,
+    sessionId,
+    selectedPromptId,
+    selectedDetail,
+    refresh,
+    clearDraft,
+    setSelectedPromptId,
+    onError: setLocalError,
+  });
 
   useEffect(() => {
     const isAdminShortcut = (event: KeyboardEvent) => {
@@ -226,21 +215,6 @@ export default function HomePage() {
     };
   }, [sessionId]);
 
-  useEffect(() => {
-    const onBeforeUnload = () => {
-      if (!selectedPromptId || !sessionId || mode !== "worker") {
-        return;
-      }
-
-      if (canRespond(selectedDetail, sessionId)) {
-        void api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
-      }
-    };
-
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [selectedPromptId, selectedDetail, sessionId, mode]);
-
   const onOpenShare = async () => {
     if (!shareAvailable) {
       return;
@@ -262,51 +236,6 @@ export default function HomePage() {
   };
 
   const onEnableNotifications = requestNotifications;
-
-  useEffect(() => {
-    const previousMode = previousModeRef.current;
-    previousModeRef.current = mode;
-
-    if (!selectedPromptId) {
-      return;
-    }
-
-    if (
-      previousMode === "worker" &&
-      mode !== "worker" &&
-      sessionId &&
-      canRespond(selectedDetail, sessionId)
-    ) {
-      void (async () => {
-        await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
-        clearDraft();
-        setSelectedPromptId(null);
-        await refresh();
-      })();
-      return;
-    }
-
-    if (mode === "requester") {
-      clearDraft();
-      setSelectedPromptId(null);
-    }
-  }, [clearDraft, mode, refresh, selectedDetail, selectedPromptId, sessionId, setSelectedPromptId]);
-
-  const selectPrompt = async (item: PromptListItem) => {
-    setLocalError(null);
-    setSelectedPromptId(item.id);
-    if (mode === "worker" && item.status === "pending") {
-      try {
-        await api.claimPrompt(sessionId, item.id);
-      } catch (err) {
-        setLocalError(err instanceof Error ? err.message : "Nao foi possivel reservar o prompt.");
-        setSelectedPromptId(null);
-        await refresh();
-        return;
-      }
-    }
-    await refresh();
-  };
 
   const selectAdminPrompt = async (item: PromptListItem) => {
     setLocalError(null);
@@ -409,7 +338,7 @@ export default function HomePage() {
   const waitingBadge = useMemo(
     () =>
       mode === "worker"
-        ? "Voce esta substituindo uma IA."
+        ? "Você esta substituindo uma IA."
         : mode === "admin"
           ? "Painel administrativo"
         : "CLT-5.3-Mini",
@@ -590,7 +519,7 @@ export default function HomePage() {
                 </Queue>
                 {mode === "worker" ? (
                   <div className="mt-3 rounded-sm border border-border bg-background p-3">
-                    <p className="font-medium text-sm">Notificacoes de novos prompts</p>
+                    <p className="font-medium text-sm">Notificações de novos prompts</p>
                     <p className="mt-1 text-muted-foreground text-xs">
                       Receba um alerta quando novos prompts entrarem na fila.
                     </p>
@@ -603,12 +532,12 @@ export default function HomePage() {
                       {notifyEnabled && notifyPermission === "granted" ? (
                         <>
                           <BellIcon />
-                          Desativar notificacoes
+                          Desativar notificações
                         </>
                       ) : (
                         <>
                           <BellOffIcon />
-                          Receber notificacoes
+                          Receber notificações
                         </>
                       )}
                     </Button>
@@ -847,15 +776,7 @@ export default function HomePage() {
                           </Button>
                           <Button
                             disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                            onClick={async () => {
-                              if (!selectedPromptId) {
-                                return;
-                              }
-                              await api.releasePrompt(sessionId, selectedPromptId).catch(() => null);
-                              clearDraft();
-                              setSelectedPromptId(null);
-                              await refresh();
-                            }}
+                            onClick={() => void releaseCurrentPrompt()}
                             type="button"
                             variant="ghost"
                           >
