@@ -24,7 +24,6 @@ export default async function HistoryPage() {
           </Link>
         }
         currentPage="Ranking"
-        description="Em alta mostra votos recentes. Mais votados mostra o total acumulado."
         title="Ranking"
       />
 

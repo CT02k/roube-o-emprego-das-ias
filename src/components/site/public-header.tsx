@@ -25,17 +25,6 @@ export function PublicHeader({
       )}
     >
       <div className="flex flex-col gap-4">
-        {/* <div className="flex min-w-0 flex-wrap items-center gap-2 text-muted-foreground text-xs">
-          <Link
-            className="font-medium text-foreground transition-colors hover:text-primary"
-            href="/"
-          >
-            Roube o emprego das IAs
-          </Link>
-          <span className="text-border">/</span>
-          <span className="truncate">{currentPage}</span>
-        </div> */}
-
         <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0">
             <h1 className="font-semibold text-base sm:text-lg">{title}</h1>

@@ -372,7 +372,7 @@ export default function HomePage() {
         className="relative min-h-svh w-full transition-colors duration-500"
         data-mode={mode}
       >
-        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 overflow-x-hidden px-4 py-4 sm:px-6">
+        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-5 overflow-x-hidden px-4 py-4 sm:px-6">
           <PublicHeader
             currentPage="Inicio"
             description={waitingBadge}
@@ -547,7 +547,7 @@ export default function HomePage() {
                 />
               )}
 
-              <section className="flex min-h-[65svh] flex-col overflow-hidden rounded-sm border border-border bg-card lg:h-[calc(100svh-8rem)]">
+              <section className="flex min-h-[65svh] flex-col overflow-hidden rounded-sm border border-border bg-card lg:h-[calc(100svh-8.5rem)]">
                 {mode === "requester" ? (
                   <>
                     <RequesterPanel
@@ -625,10 +625,12 @@ export default function HomePage() {
               </section>
             </div>
 
-            <HistoryHighlights
-              className="hidden self-start xl:block"
-              sessionId={sessionId}
-            />
+            {mode === "requester" ? (
+              <HistoryHighlights
+                className="hidden self-start xl:block"
+                sessionId={sessionId}
+              />
+            ) : null}
           </div>
         </main>
       </div>
