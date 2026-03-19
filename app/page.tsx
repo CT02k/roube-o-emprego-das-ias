@@ -1,16 +1,11 @@
 "use client";
 
 import { DrawingDialog } from "@/components/drawing-dialog";
+import { AdminPanel } from "@/components/home/admin-panel";
+import { PromptSidebar } from "@/components/home/prompt-sidebar";
+import { RequesterPanel } from "@/components/home/requester-panel";
+import { WorkerPanel } from "@/components/home/worker-panel";
 import { ShareDialog } from "@/components/share-dialog";
-import {
-  Conversation,
-  ConversationContent,
-  ConversationEmptyState,
-} from "@/components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
-import { Queue, QueueItem, QueueItemContent } from "@/components/ai-elements/queue";
-import { Shimmer } from "@/components/ai-elements/shimmer";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -32,44 +27,21 @@ import { usePromptsData } from "@/hooks/use-prompts-data";
 import { useSessionId } from "@/hooks/use-session-id";
 import { useWorkerClaim } from "@/hooks/use-worker-claim";
 import { api } from "@/lib/client-api";
-import { PromptDetail, PromptListItem, SharePayload } from "@/lib/types";
+import type { PromptDetail, PromptListItem, SharePayload } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/store/ui-store";
 import {
   ArrowLeftIcon,
-  BellIcon,
-  BellOffIcon,
-  BrushIcon,
   Clock3Icon,
   LockIcon,
-  LoaderCircleIcon,
-  ShieldIcon,
   SendIcon,
   Share2Icon,
-  Trash2Icon,
-  UnlockIcon,
-  User2Icon,
+  ShieldIcon,
   UserPenIcon,
 } from "lucide-react";
-import Image from "next/image";
-import {
-  KeyboardEvent as ReactKeyboardEvent,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useState } from "react";
 
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
-
-const statusMeta = (item: Pick<PromptListItem, "status">) => {
-  if (item.status === "responded") {
-    return { label: "Respondido", variant: "default" as const };
-  }
-  if (item.status === "in_progress") {
-    return { label: "Em espera...", variant: "secondary" as const };
-  }
-  return { label: "Em espera...", variant: "outline" as const };
-};
 
 const canRespond = (detail: PromptDetail | null, sessionId: string) => {
   if (!detail || detail.status !== "in_progress" || !detail.claimInfo) {
@@ -99,6 +71,7 @@ export default function HomePage() {
   const [shareHintOpen, setShareHintOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+
   const {
     adminUnlocked,
     adminToken,
@@ -117,16 +90,18 @@ export default function HomePage() {
     setMode,
     setSelectedPromptId,
   });
+
   const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
     sessionId,
     mode,
     adminUnlocked,
     adminToken
   );
+
   const {
     notifyEnabled,
     notifyPermission,
-    onEnableNotifications: requestNotifications,
+    onEnableNotifications: onEnableNotifications,
   } = useNotifications({
     mode,
     list,
@@ -134,6 +109,7 @@ export default function HomePage() {
     selectedPromptId,
     onError: setLocalError,
   });
+
   const { clearSelectedPrompt, selectPrompt, releaseCurrentPrompt } = useWorkerClaim({
     mode,
     sessionId,
@@ -158,7 +134,7 @@ export default function HomePage() {
         event.key === "'" ||
         event.key === '"' ||
         event.key === "Dead" ||
-        event.key === "´" ||
+        event.key === "Â´" ||
         event.key === "`"
       );
     };
@@ -234,8 +210,6 @@ export default function HomePage() {
       setShareLoading(false);
     }
   };
-
-  const onEnableNotifications = requestNotifications;
 
   const selectAdminPrompt = async (item: PromptListItem) => {
     setLocalError(null);
@@ -338,10 +312,10 @@ export default function HomePage() {
   const waitingBadge = useMemo(
     () =>
       mode === "worker"
-        ? "Você esta substituindo uma IA."
+        ? "Voce esta substituindo uma IA."
         : mode === "admin"
           ? "Painel administrativo"
-        : "CLT-5.3-Mini",
+          : "CLT-5.3-Mini",
     [mode]
   );
 
@@ -373,11 +347,7 @@ export default function HomePage() {
             </div>
             <div className="flex w-full items-center gap-2 sm:w-auto">
               {(isWorkerWithSelection || isAdminWithSelection) && (
-                <Button
-                  onClick={() => void clearSelectedPrompt()}
-                  type="button"
-                  variant="outline"
-                >
+                <Button onClick={() => void clearSelectedPrompt()} type="button" variant="outline">
                   <ArrowLeftIcon />
                   Voltar para lista
                 </Button>
@@ -448,7 +418,7 @@ export default function HomePage() {
                 <TabsList>
                   <TabsTrigger value="requester">
                     <Clock3Icon />
-                    Usuário
+                    Usuario
                   </TabsTrigger>
                   <TabsTrigger value="worker">
                     <UserPenIcon />
@@ -474,318 +444,46 @@ export default function HomePage() {
                 : "grid-cols-1"
             )}
           >
-                        {((mode === "worker" && !isWorkerWithSelection) ||
+            {((mode === "worker" && !isWorkerWithSelection) ||
               (mode === "admin" && !isAdminWithSelection)) && (
-              <aside className="flex min-h-0 max-h-80 flex-col rounded-sm border border-border bg-card p-3 lg:max-h-[calc(100svh-8rem)]">
-                <p className="mb-2 px-1 font-medium text-sm">
-                  {mode === "admin" ? "Painel de moderacao" : "Fila de prompts"}
-                </p>
-                <Queue className="h-full border-none bg-transparent p-0 shadow-none">
-                  <div className="space-y-1 overflow-y-auto pr-1">
-                    {(mode === "admin" ? adminList : list).map((item) => {
-                      const meta = statusMeta(item);
-                      const active = item.id === selectedPromptId;
-                      return (
-                        <button
-                          className={cn(
-                            "w-full rounded-sm border px-3 py-2 text-left transition",
-                            active
-                              ? "border-border bg-accent"
-                              : "border-transparent bg-muted hover:bg-zinc-800"
-                          )}
-                          key={item.id}
-                          onClick={() =>
-                            void (mode === "admin" ? selectAdminPrompt(item) : selectPrompt(item))
-                          }
-                          type="button"
-                        >
-                          <QueueItem className="w-full p-0 hover:bg-transparent">
-                            <div className="flex items-start justify-between gap-2">
-                              <QueueItemContent className="line-clamp-2 text-foreground">
-                                {item.textPreview}
-                              </QueueItemContent>
-                              <Badge variant={meta.variant}>{meta.label}</Badge>
-                            </div>
-                          </QueueItem>
-                        </button>
-                      );
-                    })}
-                    {(mode === "admin" ? adminList.length === 0 : list.length === 0) && (
-                      <div className="rounded-sm border border-dashed border-border p-4 text-muted-foreground text-sm">
-                        Sem mensagens por enquanto.
-                      </div>
-                    )}
-                  </div>
-                </Queue>
-                {mode === "worker" ? (
-                  <div className="mt-3 rounded-sm border border-border bg-background p-3">
-                    <p className="font-medium text-sm">Notificações de novos prompts</p>
-                    <p className="mt-1 text-muted-foreground text-xs">
-                      Receba um alerta quando novos prompts entrarem na fila.
-                    </p>
-                    <Button
-                      className="mt-3 w-full"
-                      onClick={() => void onEnableNotifications()}
-                      type="button"
-                      variant="outline"
-                    >
-                      {notifyEnabled && notifyPermission === "granted" ? (
-                        <>
-                          <BellIcon />
-                          Desativar notificações
-                        </>
-                      ) : (
-                        <>
-                          <BellOffIcon />
-                          Receber notificações
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="mt-3 rounded-sm border border-border bg-background p-3 text-xs text-muted-foreground">
-                    Use Ctrl + &apos; para desbloquear o painel admin.
-                  </div>
-                )}
-              </aside>
+              <PromptSidebar
+                adminList={adminList}
+                list={list}
+                mode={mode}
+                notifyEnabled={notifyEnabled}
+                notifyPermission={notifyPermission}
+                onEnableNotifications={onEnableNotifications}
+                onSelectAdminPrompt={selectAdminPrompt}
+                onSelectPrompt={selectPrompt}
+                selectedPromptId={selectedPromptId}
+              />
             )}
 
             <section className="flex min-h-[65svh] flex-col overflow-hidden rounded-sm border border-border bg-card lg:h-[calc(100svh-8rem)]">
-              <Conversation className="min-h-0">
-                <ConversationContent className="gap-6 p-5">
-                  {mode === "requester" && requesterThread.length === 0 && (
-                    <ConversationEmptyState
-                      description="Envie um prompt para alguém responder."
-                      icon={isLoading ? (<LoaderCircleIcon className="animate-spin" />) : <User2Icon/>}
-                      title={isLoading ? "Carregando..." : "Conversa vazia"}
-                    />
-                  )}
-                  {mode === "requester" &&
-                    requesterThread.map((entry) => (
-                      <div className="space-y-3" key={entry.id}>
-                        <Message from="user">
-                          <MessageContent>{entry.text}</MessageContent>
-                        </Message>
-                        {entry.response ? (
-                          <Message from="assistant">
-                            <MessageContent>
-                              {entry.response.type === "text" ? (
-                                <MessageResponse>{entry.response.text}</MessageResponse>
-                              ) : entry.response.imageDataUrl ? (
-                              <Image
-                                alt="Desenho humano enviado como resposta"
-                                className="max-h-[420px] w-full rounded-sm border border-border object-contain"
-                                height={420}
-                                src={entry.response.imageDataUrl}
-                                unoptimized
-                                  width={720}
-                                />
-                              ) : (
-                                <p className="text-muted-foreground text-sm">
-                                  Resposta de imagem indisponivel.
-                                </p>
-                              )}
-                            </MessageContent>
-                          </Message>
-                        ) : (
-                          <div className="rounded-sm border border-dashed border-border bg-muted p-4 text-muted-foreground text-sm">
-                            <Shimmer className="font-medium text-sm" duration={1.8}>{statusMeta({ status: entry.status }).label}</Shimmer>
-                            <p className="mt-1">
-                              {notifyEnabled && notifyPermission === "granted"
-                                ? "Te avisamos quando alguem responder."
-                                : "Ative notificações para ser avisado quando responderem."}
-                            </p>                            {!(notifyEnabled && notifyPermission === "granted") && (
-                              <Button
-                                className="mt-3"
-                                onClick={() => void onEnableNotifications()}
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                <BellIcon />
-                                Receber notificações
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  {mode === "worker" && !selectedDetail && (
-                    <ConversationEmptyState
-                      description="Selecione um prompt na fila para responder."
-                      icon={isLoading ? (<LoaderCircleIcon className="animate-spin" />) : <User2Icon/>}
-                      title={isLoading ? "Carregando..." : "Nenhuma conversa selecionada"}
-                    />
-                  )}
-                  {mode === "worker" && selectedDetail && (
-                    <>
-                      <Message from="user">
-                        <MessageContent>{selectedDetail.text}</MessageContent>
-                      </Message>
-                      {selectedDetail.response && (
-                        <Message from="assistant">
-                          <MessageContent>
-                            {selectedDetail.response.type === "text" ? (
-                              <MessageResponse>{selectedDetail.response.text}</MessageResponse>
-                            ) : selectedDetail.response.imageDataUrl ? (
-                              <Image
-                                alt="Desenho humano enviado como resposta"
-                                className="max-h-[420px] w-full rounded-sm border border-border object-contain"
-                                height={420}
-                                src={selectedDetail.response.imageDataUrl}
-                                unoptimized
-                                width={720}
-                              />
-                            ) : (
-                              <p className="text-muted-foreground text-sm">
-                                Resposta de imagem indisponivel.
-                              </p>
-                            )}
-                          </MessageContent>
-                        </Message>
-                      )}
-                    </>
-                  )}
-                  {mode === "admin" && !selectedDetail && (
-                    <ConversationEmptyState
-                      description="Selecione um prompt para moderar."
-                      icon={isLoading ? <LoaderCircleIcon className="animate-spin" /> : <ShieldIcon />}
-                      title={isLoading ? "Carregando..." : "Nenhum prompt selecionado"}
-                    />
-                  )}
-                  {mode === "admin" && selectedDetail && (
-                    <div className="space-y-3">
-                      <Message from="user">
-                        <MessageContent>{selectedDetail.text}</MessageContent>
-                      </Message>
-                      {selectedDetail.response ? (
-                        <Message from="assistant">
-                          <MessageContent>
-                            {selectedDetail.response.type === "text" ? (
-                              <MessageResponse>{selectedDetail.response.text}</MessageResponse>
-                            ) : selectedDetail.response.imageDataUrl ? (
-                              <Image
-                                alt="Resposta em imagem"
-                                className="max-h-[420px] w-full rounded-sm border border-border object-contain"
-                                height={420}
-                                src={selectedDetail.response.imageDataUrl}
-                                unoptimized
-                                width={720}
-                              />
-                            ) : (
-                              <p className="text-muted-foreground text-sm">
-                                Resposta de imagem indisponivel.
-                              </p>
-                            )}
-                          </MessageContent>
-                        </Message>
-                      ) : (
-                        <div className="rounded-sm border border-dashed border-border bg-muted p-4 text-muted-foreground text-sm">
-                          Sem resposta ainda.
-                        </div>
-                      )}
-                      <div className="rounded-sm border border-border bg-muted p-3 text-xs text-muted-foreground">
-                        <p>ID do prompt: {selectedDetail.id}</p>
-                        <p>
-                          Solicitante:{" "}
-                          {adminList.find((item) => item.id === selectedDetail.id)?.requesterSessionId ?? "-"}
+              {mode === "requester" ? (
+                <>
+                  <RequesterPanel
+                    isLoading={isLoading}
+                    notifyEnabled={notifyEnabled}
+                    notifyPermission={notifyPermission}
+                    onEnableNotifications={onEnableNotifications}
+                    requesterThread={requesterThread}
+                  />
+                  <Separator />
+                  <div className="p-4">
+                    <div className="flex flex-col gap-3 rounded-sm border border-border bg-background p-3">
+                      <Textarea
+                        className="min-h-28 resize-none border-none bg-transparent p-2 shadow-none"
+                        disabled={isSubmitting}
+                        onChange={(event) => setTextDraft(event.target.value)}
+                        onKeyDown={handleComposerKeyDown}
+                        placeholder="Peca algo para um humano"
+                        value={textDraft}
+                      />
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="mr-2 ml-auto text-muted-foreground text-xs">
+                          Ctrl + Enter para enviar
                         </p>
-                        <p>
-                          Claimer:{" "}
-                          {adminList.find((item) => item.id === selectedDetail.id)?.claimedBySessionId ?? "-"}
-                        </p>
-                        <p>
-                          Respondedor:{" "}
-                          {adminList.find((item) => item.id === selectedDetail.id)?.responderSessionId ?? "-"}
-                        </p>
-                        <p>Criado em: {new Date(selectedDetail.createdAt).toLocaleString("pt-BR")}</p>
-                      </div>
-                    </div>
-                  )}
-                </ConversationContent>
-              </Conversation>
-              <Separator />
-
-              <div className="p-4">
-                {mode === "admin" ? (
-                  <div className="flex flex-wrap items-center gap-2 rounded-sm border border-border bg-background p-3">
-                    <p className="mr-auto text-muted-foreground text-xs">
-                      Moderacao: reabra prompts ou exclua definitivamente.
-                    </p>
-                    <Button
-                      disabled={!selectedPromptId || !adminToken || isSubmitting}
-                      onClick={() => void reopenByAdmin()}
-                      type="button"
-                      variant="outline"
-                    >
-                      <UnlockIcon />
-                      Reabrir para fila
-                    </Button>
-                    <Button
-                      disabled={!selectedPromptId || !adminToken || isSubmitting}
-                      onClick={() => void deleteByAdmin()}
-                      type="button"
-                      variant="destructive"
-                    >
-                      <Trash2Icon />
-                      Excluir
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3 rounded-sm border border-border bg-background p-3">
-                    <Textarea
-                      className="min-h-28 resize-none border-none bg-transparent p-2 shadow-none"
-                      disabled={mode === "worker" ? !canRespond(selectedDetail, sessionId) || isSubmitting : isSubmitting}
-                      onChange={(event) => setTextDraft(event.target.value)}
-                      onKeyDown={handleComposerKeyDown}
-                      placeholder={mode === "requester" ? "Peca algo para um humano" : "Responda como humano."}
-                      value={textDraft}
-                    />
-                    {mode === "worker" && imageDraftDataUrl && (
-                      <div className="space-y-2 rounded-sm border border-border bg-muted p-3">
-                        <p className="text-xs">Desenho pronto para enviar:</p>
-                        <Image
-                          alt="Preview do desenho"
-                          className="max-h-48 rounded-sm border border-border object-contain"
-                          height={220}
-                          src={imageDraftDataUrl}
-                          unoptimized
-                          width={360}
-                        />
-                      </div>
-                    )}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {mode === "worker" ? (
-                        <div className="mr-auto flex flex-wrap gap-2">
-                          <Button
-                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                            onClick={() => setCanvasOpen(true)}
-                            type="button"
-                            variant="outline"
-                          >
-                            <BrushIcon />
-                            Gerar imagem
-                          </Button>
-                          <Button
-                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                            onClick={() => setImageDraftDataUrl(null)}
-                            type="button"
-                            variant="ghost"
-                          >
-                            Limpar rascunho
-                          </Button>
-                          <Button
-                            disabled={!canRespond(selectedDetail, sessionId) || isSubmitting}
-                            onClick={() => void releaseCurrentPrompt()}
-                            type="button"
-                            variant="ghost"
-                          >
-                            Devolver para fila
-                          </Button>
-                        </div>
-                      ) : null}
-                      <p className="mr-2 ml-auto text-muted-foreground text-xs">Ctrl + Enter para enviar</p>
-                      {mode === "requester" ? (
                         <Button
                           disabled={textDraft.trim().length === 0 || isSubmitting}
                           onClick={() => void submitNewPrompt(textDraft)}
@@ -794,23 +492,44 @@ export default function HomePage() {
                           <SendIcon />
                           Enviar
                         </Button>
-                      ) : (
-                        <Button
-                          disabled={!draftReady || !canRespond(selectedDetail, sessionId) || isSubmitting}
-                          onClick={() => void submitWorkerResponse()}
-                          type="button"
-                        >
-                          <UserPenIcon />
-                          Responder
-                        </Button>
-                      )}
+                      </div>
                     </div>
                   </div>
-                )}
-                {(error || localError) && (
-                  <p className="mt-3 text-destructive text-sm">{localError ?? error}</p>
-                )}
-              </div>
+                </>
+              ) : mode === "worker" ? (
+                <WorkerPanel
+                  canRespond={canRespond(selectedDetail, sessionId)}
+                  draftReady={draftReady}
+                  imageDraftDataUrl={imageDraftDataUrl}
+                  isLoading={isLoading}
+                  isSubmitting={isSubmitting}
+                  onClearImageDraft={() => setImageDraftDataUrl(null)}
+                  onComposerKeyDown={handleComposerKeyDown}
+                  onOpenCanvas={() => setCanvasOpen(true)}
+                  onReleasePrompt={releaseCurrentPrompt}
+                  onSubmitWorkerResponse={submitWorkerResponse}
+                  onTextDraftChange={setTextDraft}
+                  selectedDetail={selectedDetail}
+                  textDraft={textDraft}
+                />
+              ) : (
+                <AdminPanel
+                  adminList={adminList}
+                  adminToken={adminToken}
+                  isLoading={isLoading}
+                  isSubmitting={isSubmitting}
+                  onDelete={deleteByAdmin}
+                  onReopen={reopenByAdmin}
+                  selectedDetail={selectedDetail}
+                  selectedPromptId={selectedPromptId}
+                />
+              )}
+
+              {(error || localError) && (
+                <div className="px-4 pb-4">
+                  <p className="text-destructive text-sm">{localError ?? error}</p>
+                </div>
+              )}
             </section>
           </div>
         </main>
@@ -856,7 +575,11 @@ export default function HomePage() {
             <Button onClick={() => setAdminDialogOpen(false)} type="button" variant="outline">
               Cancelar
             </Button>
-            <Button disabled={adminBusy || adminKeyInput.trim().length === 0} onClick={() => void onAdminUnlock()} type="button">
+            <Button
+              disabled={adminBusy || adminKeyInput.trim().length === 0}
+              onClick={() => void onAdminUnlock()}
+              type="button"
+            >
               {adminBusy ? "Validando..." : "Entrar no admin"}
             </Button>
           </DialogFooter>
@@ -865,6 +588,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-
-

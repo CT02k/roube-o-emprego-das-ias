@@ -1,6 +1,4 @@
-import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
-import { toPromptDetail } from "@/lib/prompt-helpers";
-import { prisma } from "@/lib/prisma";
+import { getRequesterThread } from "@/lib/prompt-service";
 import { getSessionIdFromRequest } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,22 +11,7 @@ export async function GET(request: NextRequest) {
     return badRequest("x-session-id obrigatorio.");
   }
 
-  await releaseExpiredPromptClaims();
-
-  const prompts = await prisma.prompt.findMany({
-    where: {
-      requesterSessionId: sessionId,
-    },
-    include: {
-      response: true,
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-    take: 100,
-  });
-
   return NextResponse.json({
-    items: prompts.map(toPromptDetail),
+    items: await getRequesterThread(sessionId),
   });
 }

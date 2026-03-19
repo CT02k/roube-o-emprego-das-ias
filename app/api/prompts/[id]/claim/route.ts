@@ -1,6 +1,4 @@
-import { isClaimExpired } from "@/lib/prompt-helpers";
-import { prisma } from "@/lib/prisma";
-import { publishPromptEvent } from "@/lib/realtime";
+import { claimPrompt } from "@/lib/prompt-service";
 import { getSessionIdFromRequest } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -15,43 +13,7 @@ export async function POST(request: NextRequest, context: Context) {
   }
 
   const { id } = await context.params;
-  const now = new Date();
-
-  const result = await prisma.$transaction(async (tx) => {
-    const prompt = await tx.prompt.findUnique({ where: { id } });
-    if (!prompt) {
-      return { kind: "not_found" as const };
-    }
-
-    if (prompt.status === "responded") {
-      return { kind: "invalid_state" as const };
-    }
-
-    const expired = isClaimExpired(prompt.claimedAt, now);
-    const alreadyClaimedBySame =
-      prompt.status === "in_progress" &&
-      prompt.claimedBySessionId === sessionId &&
-      !expired;
-
-    if (alreadyClaimedBySame) {
-      return { kind: "ok" as const };
-    }
-
-    if (prompt.status === "in_progress" && !expired) {
-      return { kind: "conflict" as const };
-    }
-
-    await tx.prompt.update({
-      where: { id },
-      data: {
-        status: "in_progress",
-        claimedBySessionId: sessionId,
-        claimedAt: now,
-      },
-    });
-
-    return { kind: "ok" as const };
-  });
+  const result = await claimPrompt(id, sessionId);
 
   if (result.kind === "not_found") {
     return NextResponse.json({ error: "Prompt nao encontrado." }, { status: 404 });
@@ -64,13 +26,6 @@ export async function POST(request: NextRequest, context: Context) {
   if (result.kind === "conflict") {
     return NextResponse.json({ error: "Prompt ja reservado." }, { status: 409 });
   }
-
-  publishPromptEvent({
-    type: "claimed",
-    promptId: id,
-    claimedBySessionId: sessionId,
-    createdAt: now.toISOString(),
-  });
 
   return NextResponse.json({ ok: true });
 }

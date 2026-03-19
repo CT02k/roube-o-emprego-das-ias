@@ -1,5 +1,6 @@
 "use client";
 
+import { usePromptEvents } from "@/hooks/use-prompt-events";
 import { api } from "@/lib/client-api";
 import { AppMode, PromptDetail, PromptListItem } from "@/lib/types";
 import { useUIStore } from "@/store/ui-store";
@@ -96,29 +97,18 @@ export const usePromptsData = (
     void refresh();
   }, [refresh]);
 
-  useEffect(() => {
-    if (!sessionId) {
-      return;
-    }
-
-    const source = new EventSource("/api/events");
-
-    source.onmessage = () => {
+  usePromptEvents({
+    sessionId,
+    onMessage: () => {
       void refreshRef.current();
-    };
-
-    source.onerror = () => {
+    },
+    onError: () => {
       setError("Conexao em tempo real indisponivel. Tentando reconectar...");
-    };
-
-    source.onopen = () => {
+    },
+    onOpen: () => {
       setError(null);
-    };
-
-    return () => {
-      source.close();
-    };
-  }, [sessionId, mode]);
+    },
+  });
 
   return { list, selectedDetail, requesterThread, isLoading, error, refresh };
 };

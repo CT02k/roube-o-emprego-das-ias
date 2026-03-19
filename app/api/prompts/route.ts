@@ -1,10 +1,6 @@
-import { prisma } from "@/lib/prisma";
 import { getSessionIdFromRequest } from "@/lib/session";
 import { createPromptSchema } from "@/lib/validation";
-import { toPromptListItem } from "@/lib/prompt-helpers";
-import { CLAIM_TTL_MS } from "@/lib/constants";
-import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
-import { publishPromptEvent } from "@/lib/realtime";
+import { createPrompt, listPromptsForView } from "@/lib/prompt-service";
 import { NextRequest, NextResponse } from "next/server";
 
 const badRequest = (message: string) =>
@@ -21,44 +17,7 @@ export async function GET(request: NextRequest) {
     return badRequest("x-session-id obrigatorio.");
   }
 
-  const now = new Date();
-  await releaseExpiredPromptClaims(now);
-
-  const prompts =
-    view === "requester"
-      ? await prisma.prompt.findMany({
-          where: {
-            requesterSessionId: sessionId,
-            status: {
-              in: ["pending", "in_progress"],
-            },
-          },
-          include: { response: true },
-          orderBy: { createdAt: "desc" },
-          take: 100,
-        })
-      : await prisma.prompt.findMany({
-          where: {
-            OR: [
-              { status: "pending" },
-              {
-                status: "in_progress",
-                claimedBySessionId: sessionId,
-                claimedAt: {
-                  gte: new Date(now.getTime() - CLAIM_TTL_MS),
-                },
-              },
-            ],
-          },
-          include: { response: true },
-          orderBy: { createdAt: "asc" },
-          take: 100,
-        });
-
-  return NextResponse.json({
-    items: prompts.map(toPromptListItem),
-    now: now.toISOString(),
-  });
+  return NextResponse.json(await listPromptsForView(sessionId, view));
 }
 
 export async function POST(request: NextRequest) {
@@ -73,20 +32,7 @@ export async function POST(request: NextRequest) {
     return badRequest(parsed.error.issues[0]?.message ?? "Body invalido.");
   }
 
-  const prompt = await prisma.prompt.create({
-    data: {
-      text: parsed.data.text,
-      requesterSessionId: sessionId,
-    },
-  });
-
-  publishPromptEvent({
-    type: "created",
-    promptId: prompt.id,
-    requesterSessionId: sessionId,
-    claimedBySessionId: null,
-    createdAt: new Date().toISOString(),
-  });
+  const prompt = await createPrompt(sessionId, parsed.data);
 
   return NextResponse.json(
     {
