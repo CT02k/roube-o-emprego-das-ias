@@ -1,5 +1,6 @@
 "use client";
 
+import { HistoryShareButton } from "@/components/history/history-share-button";
 import { HistoryVoteButton } from "@/components/history/history-vote-button";
 import { PromptResponse } from "@/components/home/prompt-response";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,12 @@ const formatDate = (value: string) =>
 export function HistoryDetailView({ initialItem }: HistoryDetailViewProps) {
   const sessionId = useSessionId();
   const [item, setItem] = useState(initialItem);
+  const sharePayload = {
+    promptText: item.promptText,
+    responseType: item.response.type,
+    responseText: item.response.text ?? null,
+    responseImageDataUrl: item.response.imageDataUrl ?? null,
+  } as const;
 
   useEffect(() => {
     let cancelled = false;
@@ -75,7 +82,10 @@ export function HistoryDetailView({ initialItem }: HistoryDetailViewProps) {
             {formatDate(item.createdAt)}
           </span>
         </div>
-        <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
+        <div className="flex items-center gap-3">
+          <HistoryShareButton payload={sharePayload} />
+          <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
+        </div>
       </div>
 
       <section className="space-y-2">

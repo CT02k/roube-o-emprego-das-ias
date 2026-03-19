@@ -1,5 +1,6 @@
 "use client";
 
+import { HistoryShareButton } from "@/components/history/history-share-button";
 import { HistoryVoteButton } from "@/components/history/history-vote-button";
 import { PromptResponse } from "@/components/home/prompt-response";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,13 @@ const formatDate = (value: string) =>
   }).format(new Date(value));
 
 export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
+  const sharePayload = {
+    promptText: item.promptText,
+    responseType: item.response.type,
+    responseText: item.response.text ?? null,
+    responseImageDataUrl: item.response.imageDataUrl ?? null,
+  } as const;
+
   return (
     <article className="group flex h-full flex-col gap-4 rounded-sm border border-border bg-card p-4 transition-colors hover:bg-muted/30">
       <div className="flex items-center justify-between gap-3">
@@ -36,12 +44,7 @@ export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
         <PromptResponse alt="Resposta humana do historico" response={item.response} />
       </Link>
       <div className="flex items-center justify-end gap-3">
-        {/* <Link
-          className="text-sm text-primary transition-transform group-hover:translate-x-0.5"
-          href={`/historico/${item.id}`}
-        >
-          Abrir resposta
-        </Link> */}
+        <HistoryShareButton payload={sharePayload} />
         <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
       </div>
     </article>
