@@ -27,6 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useModeSync } from "@/hooks/use-mode-sync";
+import { useNotifications } from "@/hooks/use-notifications";
 import { usePromptsData } from "@/hooks/use-prompts-data";
 import { useSessionId } from "@/hooks/use-session-id";
 import { api } from "@/lib/client-api";
@@ -59,7 +60,6 @@ import {
   useState,
 } from "react";
 
-const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
 
 const statusMeta = (item: Pick<PromptListItem, "status">) => {
@@ -100,12 +100,6 @@ export default function HomePage() {
   const [shareHintOpen, setShareHintOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [notifyEnabled, setNotifyEnabled] = useState(false);
-  const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>("default");
-  const requesterResponsesRef = useRef<Record<string, boolean>>({});
-  const requesterInitRef = useRef(false);
-  const workerPromptIdsRef = useRef<Set<string>>(new Set());
-  const workerInitRef = useRef(false);
   const previousModeRef = useRef(mode);
   const {
     adminUnlocked,
@@ -130,6 +124,17 @@ export default function HomePage() {
     adminUnlocked,
     adminToken
   );
+  const {
+    notifyEnabled,
+    notifyPermission,
+    onEnableNotifications: requestNotifications,
+  } = useNotifications({
+    mode,
+    list,
+    requesterThread,
+    selectedPromptId,
+    onError: setLocalError,
+  });
 
   const clearSelectedPrompt = useCallback(async () => {
     if (!selectedPromptId) {
@@ -186,18 +191,6 @@ export default function HomePage() {
   }, [setAdminDialogOpen, setAdminKeyInput]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const stored = window.localStorage.getItem(NOTIFY_STORAGE_KEY);
-    setNotifyEnabled(stored === "1");
-    if ("Notification" in window) {
-      setNotifyPermission(Notification.permission);
-    }
-  }, []);
-
-  useEffect(() => {
     if (!NATIVE_SHARE_ENABLED) {
       setShareAvailable(false);
       setShareAvailabilityLoading(false);
@@ -235,65 +228,6 @@ export default function HomePage() {
   }, [sessionId]);
 
   useEffect(() => {
-    if (!notifyEnabled || notifyPermission !== "granted") {
-      requesterResponsesRef.current = {};
-      requesterInitRef.current = false;
-      return;
-    }
-
-    if (mode !== "requester") {
-      return;
-    }
-
-    const nextMap: Record<string, boolean> = {};
-
-    for (const entry of requesterThread) {
-      const hasResponse = Boolean(entry.response);
-      nextMap[entry.id] = hasResponse;
-
-      if (requesterInitRef.current) {
-        const hadResponse = requesterResponsesRef.current[entry.id] ?? false;
-        if (!hadResponse && hasResponse) {
-          new Notification("Resposta recebida", {
-            body: "Um humano respondeu seu prompt.",
-            tag: `response-${entry.id}`,
-          });
-        }
-      }
-    }
-
-    requesterResponsesRef.current = nextMap;
-    requesterInitRef.current = true;
-  }, [mode, notifyEnabled, notifyPermission, requesterThread]);
-
-  useEffect(() => {
-    if (!notifyEnabled || notifyPermission !== "granted") {
-      workerPromptIdsRef.current = new Set();
-      workerInitRef.current = false;
-      return;
-    }
-
-    if (mode !== "worker" || Boolean(selectedPromptId)) {
-      return;
-    }
-
-    const currentIds = new Set(list.map((item) => item.id));
-    if (workerInitRef.current) {
-      for (const item of list) {
-        if (!workerPromptIdsRef.current.has(item.id) && item.status === "pending") {
-          new Notification("Novo prompt na fila", {
-            body: item.textPreview,
-            tag: `worker-prompt-${item.id}`,
-          });
-        }
-      }
-    }
-
-    workerPromptIdsRef.current = currentIds;
-    workerInitRef.current = true;
-  }, [mode, notifyEnabled, notifyPermission, list, selectedPromptId]);
-
-  useEffect(() => {
     const onBeforeUnload = () => {
       if (!selectedPromptId || !sessionId || mode !== "worker") {
         return;
@@ -328,29 +262,7 @@ export default function HomePage() {
     }
   };
 
-  const onEnableNotifications = async () => {
-    if (typeof window === "undefined" || !("Notification" in window)) {
-      setLocalError("Este navegador nao suporta notificações.");
-      return;
-    }
-
-    const permission =
-      Notification.permission === "granted"
-        ? "granted"
-        : await Notification.requestPermission();
-    setNotifyPermission(permission);
-
-    if (permission === "granted") {
-      setNotifyEnabled(true);
-      window.localStorage.setItem(NOTIFY_STORAGE_KEY, "1");
-      setLocalError(null);
-      return;
-    }
-
-    setNotifyEnabled(false);
-    window.localStorage.setItem(NOTIFY_STORAGE_KEY, "0");
-    setLocalError("Ative notificações no navegador para receber alertas.");
-  };
+  const onEnableNotifications = requestNotifications;
 
   useEffect(() => {
     const previousMode = previousModeRef.current;
