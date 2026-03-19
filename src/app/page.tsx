@@ -336,6 +336,7 @@ export default function HomePage() {
     !isSubmitting;
   const adminTabVisible = false;
   const adminList = mode === "admin" ? list : [];
+  const showHistoryHighlights = mode === "requester";
 
   const waitingBadge = useMemo(
     () =>
@@ -523,7 +524,12 @@ export default function HomePage() {
             }
           />
 
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div
+            className={cn(
+              "grid gap-4",
+              showHistoryHighlights && "xl:grid-cols-[minmax(0,1fr)_320px]",
+            )}
+          >
             <div
               className={cn(
                 "grid gap-4",
@@ -626,7 +632,7 @@ export default function HomePage() {
               </section>
             </div>
 
-            {mode === "requester" ? (
+            {showHistoryHighlights ? (
               <HistoryHighlights
                 className="hidden self-start xl:block"
                 sessionId={sessionId}
