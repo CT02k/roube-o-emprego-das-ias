@@ -1,11 +1,14 @@
+ "use client";
+
 import { HistoryCard } from "@/components/history/history-card";
 import type { HistoryListItem } from "@/lib/types";
 
 type HistoryListProps = {
   items: HistoryListItem[];
+  onVoteChange: (itemId: string, viewerHasUpvoted: boolean, upvotesCount: number) => void;
 };
 
-export function HistoryList({ items }: HistoryListProps) {
+export function HistoryList({ items, onVoteChange }: HistoryListProps) {
   if (items.length === 0) {
     return (
       <div className="rounded-sm border border-dashed border-border bg-card p-8 text-center">
@@ -18,9 +21,9 @@ export function HistoryList({ items }: HistoryListProps) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
       {items.map((item) => (
-        <HistoryCard item={item} key={item.id} />
+        <HistoryCard item={item} key={item.id} onVoteChange={onVoteChange} />
       ))}
     </div>
   );

@@ -103,6 +103,8 @@ export const toHistoryListItem = (prompt: PromptWithOptionalResponse): HistoryLi
     promptText: prompt.text,
     response: detail.response,
     createdAt: detail.response.createdAt,
+    upvotesCount: 0,
+    viewerHasUpvoted: false,
   };
 };
 
@@ -119,5 +121,7 @@ export const toHistoryDetail = (prompt: PromptWithOptionalResponse): HistoryDeta
     promptText: prompt.text,
     response: detail.response,
     createdAt: detail.response.createdAt,
+    upvotesCount: 0,
+    viewerHasUpvoted: false,
   };
 };

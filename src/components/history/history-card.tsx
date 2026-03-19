@@ -1,3 +1,6 @@
+"use client";
+
+import { HistoryVoteButton } from "@/components/history/history-vote-button";
 import { PromptResponse } from "@/components/home/prompt-response";
 import { Badge } from "@/components/ui/badge";
 import type { HistoryListItem } from "@/lib/types";
@@ -5,6 +8,7 @@ import Link from "next/link";
 
 type HistoryCardProps = {
   item: HistoryListItem;
+  onVoteChange: (itemId: string, viewerHasUpvoted: boolean, upvotesCount: number) => void;
 };
 
 const formatDate = (value: string) =>
@@ -15,26 +19,32 @@ const formatDate = (value: string) =>
     minute: "2-digit",
   }).format(new Date(value));
 
-export function HistoryCard({ item }: HistoryCardProps) {
+export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
   return (
-    <Link
-      className="group flex h-full flex-col gap-4 rounded-sm border border-border bg-card p-4 transition-colors hover:bg-muted/30"
-      href={`/historico/${item.id}`}
-    >
+    <article className="group flex h-full flex-col gap-4 rounded-sm border border-border bg-card p-4 transition-colors hover:bg-muted/30">
       <div className="flex items-center justify-between gap-3">
         <Badge variant="secondary">{item.response.type === "image" ? "Desenho" : "Texto"}</Badge>
         <span className="text-muted-foreground text-xs">{formatDate(item.createdAt)}</span>
       </div>
-      <div className="space-y-2">
+      <Link className="space-y-2" href={`/historico/${item.id}`}>
         <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">Pergunta</p>
         <p className="line-clamp-3 text-base font-medium text-foreground">{item.promptText}</p>
-      </div>
-      <div className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border bg-background/70 p-3">
+      </Link>
+      <Link
+        className="min-h-0 flex-1 overflow-hidden rounded-sm border border-border bg-background/70 p-3"
+        href={`/historico/${item.id}`}
+      >
         <PromptResponse alt="Resposta humana do historico" response={item.response} />
+      </Link>
+      <div className="flex items-center justify-between gap-3">
+        <Link
+          className="text-sm text-primary transition-transform group-hover:translate-x-0.5"
+          href={`/historico/${item.id}`}
+        >
+          Abrir resposta
+        </Link>
+        <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
       </div>
-      <p className="text-sm text-primary transition-transform group-hover:translate-x-0.5">
-        Abrir resposta
-      </p>
-    </Link>
+    </article>
   );
 }

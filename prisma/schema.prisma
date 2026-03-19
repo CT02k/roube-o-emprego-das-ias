@@ -33,12 +33,26 @@ model Prompt {
 }
 
 model PromptResponse {
-  id               String       @id @default(cuid())
-  promptId         String       @unique
-  type             ResponseType
-  text             String?
-  imageDataUrl     String?
+  id                 String               @id @default(cuid())
+  promptId           String               @unique
+  type               ResponseType
+  text               String?
+  imageDataUrl       String?
   responderSessionId String
-  createdAt        DateTime     @default(now())
-  prompt           Prompt       @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  upvotesCount       Int                  @default(0)
+  createdAt          DateTime             @default(now())
+  prompt             Prompt               @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  votes              PromptResponseVote[]
+}
+
+model PromptResponseVote {
+  id         String         @id @default(cuid())
+  responseId String
+  sessionId  String
+  createdAt  DateTime       @default(now())
+  response   PromptResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  @@unique([responseId, sessionId])
+  @@index([responseId])
+  @@index([createdAt(sort: Desc)])
 }

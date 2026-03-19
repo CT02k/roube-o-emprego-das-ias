@@ -2,17 +2,12 @@ import { CLAIM_TTL_MS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
 import { publishPromptEvent } from "@/lib/realtime";
-import {
-  isClaimExpired,
-  toHistoryDetail,
-  toHistoryListItem,
-  toPromptDetail,
-  toPromptListItem,
-} from "@/lib/prompt-mappers";
+import { isClaimExpired, toPromptDetail, toPromptListItem } from "@/lib/prompt-mappers";
 import type {
   CreatePromptInput,
   HistoryDetail,
   HistoryListItem,
+  HistorySort,
   PromptDetail,
   PromptListItem,
   SubmitResponseInput,
@@ -81,48 +76,214 @@ export const getRequesterThread = async (sessionId: string): Promise<PromptDetai
   return prompts.map(toPromptDetail);
 };
 
-export const listHistory = async (): Promise<HistoryListItem[]> => {
-  const prompts = await prisma.prompt.findMany({
-    where: {
-      status: "responded",
-      response: {
-        isNot: null,
-      },
-    },
+const toHistoryItem = (
+  response: {
+    id: string;
+    type: "text" | "image";
+    text: string | null;
+    imageDataUrl: string | null;
+    responderSessionId: string;
+    upvotesCount: number;
+    createdAt: Date;
+    prompt: {
+      id: string;
+      text: string;
+    };
+    votes: Array<{
+      id: string;
+    }>;
+  }
+): HistoryListItem => ({
+  id: response.id,
+  promptId: response.prompt.id,
+  promptText: response.prompt.text,
+  response: {
+    id: response.id,
+    type: response.type,
+    text: response.text ?? undefined,
+    imageDataUrl: response.imageDataUrl ?? undefined,
+    responderSessionId: response.responderSessionId,
+    createdAt: response.createdAt.toISOString(),
+  },
+  createdAt: response.createdAt.toISOString(),
+  upvotesCount: response.upvotesCount,
+  viewerHasUpvoted: response.votes.length > 0,
+});
+
+export const listHistory = async (
+  sort: HistorySort = "recent",
+  sessionId?: string | null
+): Promise<HistoryListItem[]> => {
+  const responses = await prisma.promptResponse.findMany({
     include: {
-      response: true,
-    },
-    orderBy: {
-      response: {
-        createdAt: "desc",
+      prompt: {
+        select: {
+          id: true,
+          text: true,
+        },
+      },
+      votes: {
+        where: {
+          sessionId: sessionId ?? "__anonymous__",
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
       },
     },
+    orderBy:
+      sort === "top"
+        ? [{ upvotesCount: "desc" }, { createdAt: "desc" }]
+        : [{ createdAt: "desc" }],
     take: 100,
   });
 
-  return prompts
-    .map(toHistoryListItem)
-    .filter((item): item is HistoryListItem => item !== null);
+  return responses.map(toHistoryItem);
 };
 
-export const getHistoryDetail = async (responseId: string): Promise<HistoryDetail | null> => {
-  const prompt = await prisma.prompt.findFirst({
+export const getHistoryDetail = async (
+  responseId: string,
+  sessionId?: string | null
+): Promise<HistoryDetail | null> => {
+  const response = await prisma.promptResponse.findUnique({
     where: {
-      status: "responded",
-      response: {
-        id: responseId,
-      },
+      id: responseId,
     },
     include: {
-      response: true,
+      prompt: {
+        select: {
+          id: true,
+          text: true,
+        },
+      },
+      votes: {
+        where: {
+          sessionId: sessionId ?? "__anonymous__",
+        },
+        select: {
+          id: true,
+        },
+        take: 1,
+      },
     },
   });
 
-  if (!prompt) {
+  if (!response) {
     return null;
   }
 
-  return toHistoryDetail(prompt);
+  return toHistoryItem(response);
+};
+
+export const addHistoryUpvote = async (responseId: string, sessionId: string) => {
+  return prisma.$transaction(async (tx) => {
+    const response = await tx.promptResponse.findUnique({
+      where: {
+        id: responseId,
+      },
+    });
+
+    if (!response) {
+      return { kind: "not_found" as const };
+    }
+
+    const existingVote = await tx.promptResponseVote.findUnique({
+      where: {
+        responseId_sessionId: {
+          responseId,
+          sessionId,
+        },
+      },
+    });
+
+    if (existingVote) {
+      return { kind: "ok" as const, upvotesCount: response.upvotesCount };
+    }
+
+    const updated = await tx.promptResponse.update({
+      where: {
+        id: responseId,
+      },
+      data: {
+        upvotesCount: {
+          increment: 1,
+        },
+        votes: {
+          create: {
+            sessionId,
+          },
+        },
+      },
+      select: {
+        upvotesCount: true,
+      },
+    });
+
+    return { kind: "ok" as const, upvotesCount: updated.upvotesCount };
+  });
+};
+
+export const removeHistoryUpvote = async (responseId: string, sessionId: string) => {
+  return prisma.$transaction(async (tx) => {
+    const existingVote = await tx.promptResponseVote.findUnique({
+      where: {
+        responseId_sessionId: {
+          responseId,
+          sessionId,
+        },
+      },
+      include: {
+        response: {
+          select: {
+            upvotesCount: true,
+          },
+        },
+      },
+    });
+
+    if (!existingVote) {
+      const response = await tx.promptResponse.findUnique({
+        where: {
+          id: responseId,
+        },
+        select: {
+          upvotesCount: true,
+        },
+      });
+
+      if (!response) {
+        return { kind: "not_found" as const };
+      }
+
+      return { kind: "ok" as const, upvotesCount: response.upvotesCount };
+    }
+
+    const updated = await tx.promptResponse.update({
+      where: {
+        id: responseId,
+      },
+      data: {
+        upvotesCount: {
+          decrement: existingVote.response.upvotesCount > 0 ? 1 : 0,
+        },
+      },
+      select: {
+        upvotesCount: true,
+      },
+    });
+
+    await tx.promptResponseVote.delete({
+      where: {
+        responseId_sessionId: {
+          responseId,
+          sessionId,
+        },
+      },
+    });
+
+    return { kind: "ok" as const, upvotesCount: updated.upvotesCount };
+  });
 };
 
 export const createPrompt = async (sessionId: string, payload: CreatePromptInput) => {

@@ -415,7 +415,7 @@ export default function HomePage() {
               )}
               <Link className={buttonVariants({ variant: "outline" })} href="/historico">
                 <GalleryVerticalEndIcon />
-                Historico
+                Histórico
               </Link>
               <Tabs
                 onValueChange={(value) => setMode(value as "requester" | "worker")}

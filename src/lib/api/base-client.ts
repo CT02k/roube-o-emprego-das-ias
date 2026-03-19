@@ -28,6 +28,30 @@ export async function request<T>(
   return response.json() as Promise<T>;
 }
 
+export async function requestPublic<T>(
+  input: RequestInfo | URL,
+  init?: RequestInit & { sessionId?: string | null }
+): Promise<T> {
+  const headers = new Headers(init?.headers);
+  headers.set("Content-Type", "application/json");
+
+  if (init?.sessionId && init.sessionId.length > 0) {
+    headers.set("x-session-id", init.sessionId);
+  }
+
+  const response = await fetch(input, {
+    ...init,
+    headers,
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json() as Promise<T>;
+}
+
 export async function requestAdmin<T>(
   input: RequestInfo | URL,
   init: RequestInit & { sessionId: string; adminToken: string }

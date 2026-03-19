@@ -61,6 +61,8 @@ export type HistoryListItem = {
   promptText: string;
   response: NonNullable<PromptDetail["response"]>;
   createdAt: string;
+  upvotesCount: number;
+  viewerHasUpvoted: boolean;
 };
 
 export type HistoryDetail = {
@@ -69,4 +71,8 @@ export type HistoryDetail = {
   promptText: string;
   response: NonNullable<PromptDetail["response"]>;
   createdAt: string;
+  upvotesCount: number;
+  viewerHasUpvoted: boolean;
 };
+
+export type HistorySort = "recent" | "top";
