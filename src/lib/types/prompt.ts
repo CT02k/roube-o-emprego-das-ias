@@ -54,3 +54,19 @@ export type SubmitResponseInput =
 export type PromptThreadResponse = {
   items: PromptDetail[];
 };
+
+export type HistoryListItem = {
+  id: string;
+  promptId: string;
+  promptText: string;
+  response: NonNullable<PromptDetail["response"]>;
+  createdAt: string;
+};
+
+export type HistoryDetail = {
+  id: string;
+  promptId: string;
+  promptText: string;
+  response: NonNullable<PromptDetail["response"]>;
+  createdAt: string;
+};

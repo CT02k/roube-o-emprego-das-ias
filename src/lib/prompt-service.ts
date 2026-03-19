@@ -2,9 +2,17 @@ import { CLAIM_TTL_MS } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";
 import { publishPromptEvent } from "@/lib/realtime";
-import { isClaimExpired, toPromptDetail, toPromptListItem } from "@/lib/prompt-mappers";
+import {
+  isClaimExpired,
+  toHistoryDetail,
+  toHistoryListItem,
+  toPromptDetail,
+  toPromptListItem,
+} from "@/lib/prompt-mappers";
 import type {
   CreatePromptInput,
+  HistoryDetail,
+  HistoryListItem,
   PromptDetail,
   PromptListItem,
   SubmitResponseInput,
@@ -71,6 +79,50 @@ export const getRequesterThread = async (sessionId: string): Promise<PromptDetai
   });
 
   return prompts.map(toPromptDetail);
+};
+
+export const listHistory = async (): Promise<HistoryListItem[]> => {
+  const prompts = await prisma.prompt.findMany({
+    where: {
+      status: "responded",
+      response: {
+        isNot: null,
+      },
+    },
+    include: {
+      response: true,
+    },
+    orderBy: {
+      response: {
+        createdAt: "desc",
+      },
+    },
+    take: 100,
+  });
+
+  return prompts
+    .map(toHistoryListItem)
+    .filter((item): item is HistoryListItem => item !== null);
+};
+
+export const getHistoryDetail = async (responseId: string): Promise<HistoryDetail | null> => {
+  const prompt = await prisma.prompt.findFirst({
+    where: {
+      status: "responded",
+      response: {
+        id: responseId,
+      },
+    },
+    include: {
+      response: true,
+    },
+  });
+
+  if (!prompt) {
+    return null;
+  }
+
+  return toHistoryDetail(prompt);
 };
 
 export const createPrompt = async (sessionId: string, payload: CreatePromptInput) => {

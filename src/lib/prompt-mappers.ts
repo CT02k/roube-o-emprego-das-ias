@@ -1,6 +1,6 @@
 import { Prompt, PromptResponse } from "@prisma/client";
 import { CLAIM_TTL_MS } from "@/lib/constants";
-import type { PromptDetail, PromptListItem } from "@/lib/types";
+import type { HistoryDetail, HistoryListItem, PromptDetail, PromptListItem } from "@/lib/types";
 
 type PromptWithOptionalResponse = Prompt & {
   response?: PromptResponse | null;
@@ -87,5 +87,37 @@ export const toPromptDetail = (prompt: PromptWithOptionalResponse): PromptDetail
     createdAt: toIso(prompt.createdAt),
     claimInfo,
     response,
+  };
+};
+
+export const toHistoryListItem = (prompt: PromptWithOptionalResponse): HistoryListItem | null => {
+  const detail = toPromptDetail(prompt);
+
+  if (!detail.response) {
+    return null;
+  }
+
+  return {
+    id: detail.response.id,
+    promptId: prompt.id,
+    promptText: prompt.text,
+    response: detail.response,
+    createdAt: detail.response.createdAt,
+  };
+};
+
+export const toHistoryDetail = (prompt: PromptWithOptionalResponse): HistoryDetail | null => {
+  const detail = toPromptDetail(prompt);
+
+  if (!detail.response) {
+    return null;
+  }
+
+  return {
+    id: detail.response.id,
+    promptId: prompt.id,
+    promptText: prompt.text,
+    response: detail.response,
+    createdAt: detail.response.createdAt,
   };
 };

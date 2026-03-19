@@ -6,7 +6,7 @@ import { PromptSidebar } from "@/components/home/prompt-sidebar";
 import { RequesterPanel } from "@/components/home/requester-panel";
 import { WorkerPanel } from "@/components/home/worker-panel";
 import { ShareDialog } from "@/components/share-dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -33,12 +33,14 @@ import { useUIStore } from "@/store/ui-store";
 import {
   ArrowLeftIcon,
   Clock3Icon,
+  GalleryVerticalEndIcon,
   LockIcon,
   SendIcon,
   Share2Icon,
   ShieldIcon,
   UserPenIcon,
 } from "lucide-react";
+import Link from "next/link";
 import { KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useState } from "react";
 
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
@@ -411,6 +413,10 @@ export default function HomePage() {
                   </Popover>
                 </div>
               )}
+              <Link className={buttonVariants({ variant: "outline" })} href="/historico">
+                <GalleryVerticalEndIcon />
+                Historico
+              </Link>
               <Tabs
                 onValueChange={(value) => setMode(value as "requester" | "worker")}
                 value={mode}
