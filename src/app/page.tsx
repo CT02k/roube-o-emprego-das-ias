@@ -1,6 +1,7 @@
 "use client";
 
 import { DrawingDialog } from "@/components/drawing-dialog";
+import { HistoryHighlights } from "@/components/history/history-highlights";
 import { AdminPanel } from "@/components/home/admin-panel";
 import { PromptSidebar } from "@/components/home/prompt-sidebar";
 import { RequesterPanel } from "@/components/home/requester-panel";
@@ -440,6 +441,8 @@ export default function HomePage() {
               </Tabs>
             </div>
           </header>
+
+          <HistoryHighlights sessionId={sessionId} />
 
           <div
             className={cn(
