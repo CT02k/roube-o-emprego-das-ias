@@ -25,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useModeSync } from "@/hooks/use-mode-sync";
 import { usePromptsData } from "@/hooks/use-prompts-data";
 import { useSessionId } from "@/hooks/use-session-id";
@@ -49,7 +50,6 @@ import {
   UserPenIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import {
   KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -61,7 +61,6 @@ import {
 
 const NOTIFY_STORAGE_KEY = "notify-on-response-enabled";
 const NATIVE_SHARE_ENABLED = process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
-const ADMIN_STORAGE_KEY = "human-chat-admin-token";
 
 const statusMeta = (item: Pick<PromptListItem, "status">) => {
   if (item.status === "responded") {
@@ -81,7 +80,6 @@ const canRespond = (detail: PromptDetail | null, sessionId: string) => {
 };
 
 export default function HomePage() {
-  const router = useRouter();
   const sessionId = useSessionId();
   const { mode, setMode } = useModeSync();
   const selectedPromptId = useUIStore((state) => state.selectedPromptId);
@@ -104,18 +102,28 @@ export default function HomePage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>("default");
-  const [adminUnlocked, setAdminUnlocked] = useState(false);
-  const [adminToken, setAdminToken] = useState<string | null>(null);
-  const [adminGateReady, setAdminGateReady] = useState(false);
-  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
-  const [adminKeyInput, setAdminKeyInput] = useState("");
-  const [adminError, setAdminError] = useState<string | null>(null);
-  const [adminBusy, setAdminBusy] = useState(false);
   const requesterResponsesRef = useRef<Record<string, boolean>>({});
   const requesterInitRef = useRef(false);
   const workerPromptIdsRef = useRef<Set<string>>(new Set());
   const workerInitRef = useRef(false);
   const previousModeRef = useRef(mode);
+  const {
+    adminUnlocked,
+    adminToken,
+    adminDialogOpen,
+    setAdminDialogOpen,
+    adminKeyInput,
+    setAdminKeyInput,
+    adminError,
+    adminBusy,
+    onAdminUnlock,
+    onAdminLogout,
+  } = useAdminAuth({
+    sessionId,
+    mode,
+    setMode,
+    setSelectedPromptId,
+  });
   const { list, selectedDetail, requesterThread, refresh, isLoading, error } = usePromptsData(
     sessionId,
     mode,
@@ -141,59 +149,6 @@ export default function HomePage() {
       await refresh();
     }
   }, [clearDraft, mode, refresh, selectedDetail, selectedPromptId, sessionId, setSelectedPromptId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !sessionId) {
-      return;
-    }
-
-    let cancelled = false;
-    const storedToken = window.localStorage.getItem(ADMIN_STORAGE_KEY);
-
-    if (!storedToken) {
-      setAdminToken(null);
-      setAdminUnlocked(false);
-      setAdminGateReady(true);
-      return;
-    }
-
-    const validate = async () => {
-      try {
-        await api.checkAdminAuth(sessionId, storedToken);
-        if (!cancelled) {
-          setAdminToken(storedToken);
-          setAdminUnlocked(true);
-        }
-      } catch {
-        window.localStorage.removeItem(ADMIN_STORAGE_KEY);
-        if (!cancelled) {
-          setAdminToken(null);
-          setAdminUnlocked(false);
-        }
-      } finally {
-        if (!cancelled) {
-          setAdminGateReady(true);
-        }
-      }
-    };
-
-    void validate();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId]);
-
-  useEffect(() => {
-    if (!adminGateReady) {
-      return;
-    }
-
-    if (!adminUnlocked && mode === "admin") {
-      setMode("requester");
-      setSelectedPromptId(null);
-    }
-  }, [adminGateReady, adminUnlocked, mode, setMode, setSelectedPromptId]);
 
   useEffect(() => {
     const isAdminShortcut = (event: KeyboardEvent) => {
@@ -228,7 +183,7 @@ export default function HomePage() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [setAdminDialogOpen, setAdminKeyInput]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -395,34 +350,6 @@ export default function HomePage() {
     setNotifyEnabled(false);
     window.localStorage.setItem(NOTIFY_STORAGE_KEY, "0");
     setLocalError("Ative notificações no navegador para receber alertas.");
-  };
-
-  const onAdminUnlock = async () => {
-    setAdminBusy(true);
-    try {
-      const result = await api.verifyAdminCode(sessionId, adminKeyInput.trim());
-      window.localStorage.setItem(ADMIN_STORAGE_KEY, result.token);
-      setAdminToken(result.token);
-      setAdminUnlocked(true);
-      setAdminDialogOpen(false);
-      setAdminError(null);
-      router.push("/admin");
-    } catch (err) {
-      setAdminError(err instanceof Error ? err.message : "Chave admin invalida.");
-    } finally {
-      setAdminBusy(false);
-    }
-  };
-
-  const onAdminLogout = () => {
-    window.localStorage.removeItem(ADMIN_STORAGE_KEY);
-    setAdminToken(null);
-    setAdminUnlocked(false);
-    setAdminDialogOpen(false);
-    setAdminKeyInput("");
-    setAdminError(null);
-    setSelectedPromptId(null);
-    setMode("requester");
   };
 
   useEffect(() => {
