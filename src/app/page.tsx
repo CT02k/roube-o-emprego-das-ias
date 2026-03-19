@@ -477,7 +477,8 @@ export default function HomePage() {
                   <Link
                     className={cn(
                       buttonVariants({ variant: "outline" }),
-                      "w-full justify-center lg:hidden sm:w-auto",
+                      "w-full justify-center sm:w-auto",
+                      mode === "requester" && "lg:hidden",
                     )}
                     href="/historico"
                   >
