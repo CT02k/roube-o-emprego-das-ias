@@ -95,7 +95,7 @@ export function AdminShell({ children }: AdminShellProps) {
 
   return (
     <div className="min-h-svh bg-background">
-      <div className="mx-auto grid min-h-svh w-full max-w-7xl md:grid-cols-[220px_1fr]">
+      <div className="mx-auto grid min-h-svh w-full max-w-344 md:grid-cols-[220px_1fr]">
         <aside className="hidden border-r border-border bg-card md:block">
           <NavContent onLogout={onLogout} pathname={pathname} />
         </aside>

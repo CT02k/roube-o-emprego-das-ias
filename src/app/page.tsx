@@ -367,126 +367,153 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-svh w-full bg-background">
+    <div className="min-h-svh w-full overflow-x-hidden bg-background">
       <div
         className="relative min-h-svh w-full transition-colors duration-500"
         data-mode={mode}
       >
-        <main className="relative z-10 mx-auto flex w-full max-w-344 flex-col gap-4 px-4 py-4 sm:px-6">
+        <main className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-4 overflow-x-hidden px-4 py-4 sm:px-6">
           <PublicHeader
             currentPage="Inicio"
             description={waitingBadge}
             title="Roube o emprego das IAs"
             actions={
               <>
-                {(isWorkerWithSelection || isAdminWithSelection) && (
-                  <Button
-                    onClick={() => void clearSelectedPrompt()}
-                    type="button"
-                    variant="outline"
-                  >
-                    <ArrowLeftIcon />
-                    Voltar para lista
-                  </Button>
-                )}
-                {mode === "admin" && adminTabVisible && (
-                  <Button
-                    onClick={onAdminLogout}
-                    type="button"
-                    variant="outline"
-                  >
-                    <LockIcon />
-                    Sair do admin
-                  </Button>
-                )}
-                {!NATIVE_SHARE_ENABLED ? (
-                  <div
-                    onBlur={() => setShareHintOpen(false)}
-                    onFocus={() => setShareHintOpen(true)}
-                    onMouseEnter={() => setShareHintOpen(true)}
-                    onMouseLeave={() => setShareHintOpen(false)}
-                  >
-                    <Popover
-                      onOpenChange={setShareHintOpen}
-                      open={shareHintOpen}
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+                  {(isWorkerWithSelection || isAdminWithSelection) && (
+                    <Button
+                      className="w-full sm:w-auto"
+                      onClick={() => void clearSelectedPrompt()}
+                      type="button"
+                      variant="outline"
                     >
-                      <PopoverTrigger
-                        render={
-                          <Button disabled type="button" variant="outline">
-                            <Share2Icon />
-                            Compartilhar
-                          </Button>
-                        }
-                      />
-                      <PopoverContent align="end" className="text-sm">
-                        Compartilhamento nativo desativado no ambiente.
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                ) : shareAvailable ? (
-                  <Button
-                    disabled={shareAvailabilityLoading}
-                    onClick={() => void onOpenShare()}
-                    type="button"
-                    variant="outline"
-                  >
-                    <Share2Icon />
-                    Compartilhar
-                  </Button>
-                ) : (
-                  <div
-                    onBlur={() => setShareHintOpen(false)}
-                    onFocus={() => setShareHintOpen(true)}
-                    onMouseEnter={() => setShareHintOpen(true)}
-                    onMouseLeave={() => setShareHintOpen(false)}
-                  >
-                    <Popover
-                      onOpenChange={setShareHintOpen}
-                      open={shareHintOpen}
-                    >
-                      <PopoverTrigger
-                        render={
-                          <Button disabled type="button" variant="outline">
-                            <Share2Icon />
-                            Compartilhar
-                          </Button>
-                        }
-                      />
-                      <PopoverContent align="end" className="text-sm">
-                        Experimente fazer uma pergunta primeiro.
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                )}
-                <Link
-                  className={cn(
-                    buttonVariants({ variant: "outline" }),
-                    "lg:hidden",
+                      <ArrowLeftIcon />
+                      Voltar para lista
+                    </Button>
                   )}
-                  href="/historico"
-                >
-                  <GalleryVerticalEndIcon />
-                  Ranking
-                </Link>
+                  {mode === "admin" && adminTabVisible && (
+                    <Button
+                      className="w-full sm:w-auto"
+                      onClick={onAdminLogout}
+                      type="button"
+                      variant="outline"
+                    >
+                      <LockIcon />
+                      Sair do admin
+                    </Button>
+                  )}
+                  {!NATIVE_SHARE_ENABLED ? (
+                    <div
+                      className="w-full sm:w-auto"
+                      onBlur={() => setShareHintOpen(false)}
+                      onFocus={() => setShareHintOpen(true)}
+                      onMouseEnter={() => setShareHintOpen(true)}
+                      onMouseLeave={() => setShareHintOpen(false)}
+                    >
+                      <Popover
+                        onOpenChange={setShareHintOpen}
+                        open={shareHintOpen}
+                      >
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              className="w-full sm:w-auto"
+                              disabled
+                              type="button"
+                              variant="outline"
+                            >
+                              <Share2Icon />
+                              Compartilhar
+                            </Button>
+                          }
+                        />
+                        <PopoverContent align="end" className="text-sm">
+                          Compartilhamento nativo desativado no ambiente.
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  ) : shareAvailable ? (
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={shareAvailabilityLoading}
+                      onClick={() => void onOpenShare()}
+                      type="button"
+                      variant="outline"
+                    >
+                      <Share2Icon />
+                      Compartilhar
+                    </Button>
+                  ) : (
+                    <div
+                      className="w-full sm:w-auto"
+                      onBlur={() => setShareHintOpen(false)}
+                      onFocus={() => setShareHintOpen(true)}
+                      onMouseEnter={() => setShareHintOpen(true)}
+                      onMouseLeave={() => setShareHintOpen(false)}
+                    >
+                      <Popover
+                        onOpenChange={setShareHintOpen}
+                        open={shareHintOpen}
+                      >
+                        <PopoverTrigger
+                          render={
+                            <Button
+                              className="w-full sm:w-auto"
+                              disabled
+                              type="button"
+                              variant="outline"
+                            >
+                              <Share2Icon />
+                              Compartilhar
+                            </Button>
+                          }
+                        />
+                        <PopoverContent align="end" className="text-sm">
+                          Experimente fazer uma pergunta primeiro.
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+                  <Link
+                    className={cn(
+                      buttonVariants({ variant: "outline" }),
+                      "w-full justify-center lg:hidden sm:w-auto",
+                    )}
+                    href="/historico"
+                  >
+                    <GalleryVerticalEndIcon />
+                    Ranking
+                  </Link>
+                </div>
                 <Tabs
+                  className="w-full min-w-0 sm:w-auto"
                   onValueChange={(value) =>
                     setMode(value as "requester" | "worker")
                   }
                   value={mode}
                 >
-                  <TabsList>
-                    <TabsTrigger value="requester">
+                  <TabsList className="grid w-full max-w-full grid-cols-2 sm:inline-flex sm:w-fit">
+                    <TabsTrigger
+                      className="min-w-0 overflow-hidden"
+                      value="requester"
+                    >
                       <Clock3Icon />
-                      Usuário
+                      <span className="truncate">Usuário</span>
                     </TabsTrigger>
-                    <TabsTrigger value="worker">
+                    <TabsTrigger
+                      className="min-w-0 overflow-hidden"
+                      value="worker"
+                    >
                       <UserPenIcon />
-                      Trabalhador
+                      <span className="truncate">Trabalhador</span>
                     </TabsTrigger>
                     {adminTabVisible && (
-                      <TabsTrigger value="admin">
+                      <TabsTrigger
+                        className="min-w-0 overflow-hidden"
+                        value="admin"
+                      >
                         <ShieldIcon />
-                        Admin
+                        <span className="truncate">Admin</span>
                       </TabsTrigger>
                     )}
                   </TabsList>

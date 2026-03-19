@@ -20,12 +20,12 @@ export function PublicHeader({
   return (
     <header
       className={cn(
-        "sticky top-4 z-20 rounded-sm border border-border bg-card/95 px-4 py-3 backdrop-blur",
+        "sticky top-4 z-20 w-full max-w-full overflow-x-hidden rounded-sm border border-border bg-card/95 px-4 py-3 shadow-sm backdrop-blur",
         className,
       )}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center gap-2 text-muted-foreground text-sm">
+        {/* <div className="flex min-w-0 flex-wrap items-center gap-2 text-muted-foreground text-xs">
           <Link
             className="font-medium text-foreground transition-colors hover:text-primary"
             href="/"
@@ -33,20 +33,20 @@ export function PublicHeader({
             Roube o emprego das IAs
           </Link>
           <span className="text-border">/</span>
-          <span>{currentPage}</span>
-        </div>
+          <span className="truncate">{currentPage}</span>
+        </div> */}
 
-        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <h1 className="font-semibold text-lg sm:text-xl">{title}</h1>
+        <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-semibold text-base sm:text-lg">{title}</h1>
             {description ? (
-              <p className="mt-1 text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-xs sm:text-sm">
                 {description}
               </p>
             ) : null}
           </div>
           {actions ? (
-            <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:justify-end">
+            <div className="flex min-w-0 w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center xl:w-auto xl:justify-end">
               {actions}
             </div>
           ) : null}
