@@ -19,7 +19,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
@@ -32,7 +32,7 @@
   ],
   "exclude": [
     "node_modules",
-    "components/ai-elements/**/*.tsx",
-    "lib/generated/prisma/**/*.ts"
+    "src/components/ai-elements/**/*.tsx",
+    "src/lib/generated/prisma/**/*.ts"
   ]
 }

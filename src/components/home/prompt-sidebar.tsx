@@ -84,7 +84,7 @@ export function PromptSidebar({
       </Queue>
       {mode === "worker" ? (
         <div className="mt-3 rounded-sm border border-border bg-background p-3">
-          <p className="font-medium text-sm">Notificacoes de novos prompts</p>
+          <p className="font-medium text-sm">Notificações de novos prompts</p>
           <p className="mt-1 text-muted-foreground text-xs">
             Receba um alerta quando novos prompts entrarem na fila.
           </p>

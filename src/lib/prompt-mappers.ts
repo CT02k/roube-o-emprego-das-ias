@@ -1,4 +1,4 @@
-import { Prompt, PromptResponse } from "@/lib/generated/prisma/client";
+import { Prompt, PromptResponse } from "@prisma/client";
 import { CLAIM_TTL_MS } from "@/lib/constants";
 import type { PromptDetail, PromptListItem } from "@/lib/types";
 

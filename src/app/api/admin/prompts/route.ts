@@ -1,4 +1,4 @@
-import { PromptStatus } from "@/lib/generated/prisma/client";
+import { PromptStatus } from "@prisma/client";
 import { forbiddenAdminResponse, isAdminAuthorized } from "@/lib/admin-auth";
 import { toAdminPromptListItem } from "@/lib/prompt-helpers";
 import { releaseExpiredPromptClaims } from "@/lib/prompt-maintenance";

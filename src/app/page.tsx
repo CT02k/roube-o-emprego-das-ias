@@ -418,7 +418,7 @@ export default function HomePage() {
                 <TabsList>
                   <TabsTrigger value="requester">
                     <Clock3Icon />
-                    Usuario
+                    Usuário
                   </TabsTrigger>
                   <TabsTrigger value="worker">
                     <UserPenIcon />
@@ -477,7 +477,7 @@ export default function HomePage() {
                         disabled={isSubmitting}
                         onChange={(event) => setTextDraft(event.target.value)}
                         onKeyDown={handleComposerKeyDown}
-                        placeholder="Peca algo para um humano"
+                        placeholder="Peça algo para um humano"
                         value={textDraft}
                       />
                       <div className="flex flex-wrap items-center gap-2">

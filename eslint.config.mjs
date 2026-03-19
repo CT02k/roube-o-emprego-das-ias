@@ -12,8 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
-    "components/ai-elements/**",
-    "lib/generated/prisma/**",
+    "src/components/ai-elements/**",
+    "src/lib/generated/prisma/**",
   ]),
 ]);
 
