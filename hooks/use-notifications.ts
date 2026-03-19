@@ -106,7 +106,7 @@ export const useNotifications = ({
 
   const onEnableNotifications = async () => {
     if (typeof window === "undefined" || !("Notification" in window)) {
-      onError("Este navegador nao suporta notificacoes.");
+      onError("Este navegador nao suporta notificações.");
       return;
     }
 
@@ -125,7 +125,7 @@ export const useNotifications = ({
 
     setNotifyEnabled(false);
     window.localStorage.setItem(NOTIFY_STORAGE_KEY, "0");
-    onError("Ative notificacoes no navegador para receber alertas.");
+    onError("Ative notificações no navegador para receber alertas.");
   };
 
   return {

@@ -62,7 +62,7 @@ export function RequesterPanel({
                 <p className="mt-1">
                   {notifyEnabled && notifyPermission === "granted"
                     ? "Te avisamos quando alguem responder."
-                    : "Ative notificacoes para ser avisado quando responderem."}
+                    : "Ative notificações para ser avisado quando responderem."}
                 </p>
                 {!(notifyEnabled && notifyPermission === "granted") && (
                   <Button
@@ -73,7 +73,7 @@ export function RequesterPanel({
                     variant="outline"
                   >
                     <BellIcon />
-                    Receber notificacoes
+                    Receber notificações
                   </Button>
                 )}
               </div>

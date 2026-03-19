@@ -312,7 +312,7 @@ export default function HomePage() {
   const waitingBadge = useMemo(
     () =>
       mode === "worker"
-        ? "Voce esta substituindo uma IA."
+        ? "Você esta substituindo uma IA."
         : mode === "admin"
           ? "Painel administrativo"
           : "CLT-5.3-Mini",

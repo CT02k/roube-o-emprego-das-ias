@@ -6,7 +6,7 @@ Aplicação SPA em Next.JS: pessoas enviam prompts e outras pessoas respondem ma
 
 ### 1) Pre-requisitos
 - Node.js 20+ (recomendado)
-- PostgreSQL rodando localmente
+- PostgreSQL
 
 ### 2) Instalar dependencias
 ```bash

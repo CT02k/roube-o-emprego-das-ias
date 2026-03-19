@@ -97,12 +97,12 @@ export function PromptSidebar({
             {notifyEnabled && notifyPermission === "granted" ? (
               <>
                 <BellIcon />
-                Desativar notificacoes
+                Desativar notificações
               </>
             ) : (
               <>
                 <BellOffIcon />
-                Receber notificacoes
+                Receber notificações
               </>
             )}
           </Button>
