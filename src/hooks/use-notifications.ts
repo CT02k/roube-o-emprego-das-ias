@@ -19,6 +19,46 @@ type UseNotificationsResult = {
   onEnableNotifications: () => Promise<void>;
 };
 
+type NotificationPayload = {
+  title: string;
+  options?: NotificationOptions;
+};
+
+const showNotificationSafely = async ({
+  title,
+  options,
+}: NotificationPayload) => {
+  if (typeof window === "undefined" || !("Notification" in window)) {
+    return;
+  }
+
+  try {
+    new Notification(title, options);
+    return;
+  } catch (error) {
+    const canUseServiceWorker =
+      "serviceWorker" in navigator && typeof navigator.serviceWorker.getRegistration === "function";
+
+    if (!canUseServiceWorker) {
+      console.warn("Notification delivery unavailable in this browser.", error);
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration?.showNotification) {
+        await registration.showNotification(title, options);
+        return;
+      }
+    } catch (serviceWorkerError) {
+      console.warn("Service worker notification delivery failed.", serviceWorkerError);
+      return;
+    }
+
+    console.warn("Notification constructor unavailable and no service worker registration found.", error);
+  }
+};
+
 export const useNotifications = ({
   mode,
   list,
@@ -65,9 +105,12 @@ export const useNotifications = ({
       if (requesterInitRef.current) {
         const hadResponse = requesterResponsesRef.current[entry.id] ?? false;
         if (!hadResponse && hasResponse) {
-          new Notification("Resposta recebida", {
-            body: "Um humano respondeu seu prompt.",
-            tag: `response-${entry.id}`,
+          void showNotificationSafely({
+            title: "Resposta recebida",
+            options: {
+              body: "Um humano respondeu seu prompt.",
+              tag: `response-${entry.id}`,
+            },
           });
         }
       }
@@ -92,9 +135,12 @@ export const useNotifications = ({
     if (workerInitRef.current) {
       for (const item of list) {
         if (!workerPromptIdsRef.current.has(item.id) && item.status === "pending") {
-          new Notification("Novo prompt na fila", {
-            body: item.textPreview,
-            tag: `worker-prompt-${item.id}`,
+          void showNotificationSafely({
+            title: "Novo prompt na fila",
+            options: {
+              body: item.textPreview,
+              tag: `worker-prompt-${item.id}`,
+            },
           });
         }
       }
