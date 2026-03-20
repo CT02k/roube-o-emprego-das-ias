@@ -6,6 +6,7 @@ import { api } from "@/lib/client-api";
 import type { HistoryListItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ArrowUpIcon, FlameIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -24,7 +25,7 @@ export function HistoryHighlights({ sessionId, className }: HistoryHighlightsPro
       try {
         const result = await api.listHistory("hot", sessionId);
         if (!cancelled) {
-          setItems(result.items.slice(0, 3));
+          setItems(result.items.slice(0, 5));
         }
       } catch {
         if (!cancelled) {
@@ -45,7 +46,12 @@ export function HistoryHighlights({ sessionId, className }: HistoryHighlightsPro
   }
 
   return (
-    <section className={cn("space-y-3 rounded-sm border border-border bg-card p-4", className)}>
+    <section
+      className={cn(
+        "flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-border bg-card p-4",
+        className
+      )}
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -61,7 +67,7 @@ export function HistoryHighlights({ sessionId, className }: HistoryHighlightsPro
         </Link>
       </div>
 
-      <div className="grid gap-3 lg:grid-cols-1">
+      <div className="mt-3 grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1 lg:grid-cols-1">
         {items.map((item) => (
           <Link
             className="rounded-sm border border-border bg-background/70 p-4 transition-colors hover:bg-muted/30"
@@ -78,16 +84,24 @@ export function HistoryHighlights({ sessionId, className }: HistoryHighlightsPro
               </span>
             </div>
             <p className="mt-3 line-clamp-2 font-medium text-foreground">{item.promptText}</p>
-            <p
-              className={cn(
-                "mt-2 text-sm text-muted-foreground",
-                item.response.type === "text" && "line-clamp-2"
-              )}
-            >
-              {item.response.type === "text"
-                ? item.response.text ?? "Resposta sem texto."
-                : "Abrir desenho humano"}
-            </p>
+            {item.response.type === "text" ? (
+              <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">
+                {item.response.text ?? "Resposta sem texto."}
+              </p>
+            ) : item.response.imageDataUrl ? (
+              <div className="mt-3 overflow-hidden rounded-sm border border-border bg-muted/40">
+                <Image
+                  alt="Preview do desenho em alta"
+                  className="max-h-44 w-full object-contain"
+                  height={176}
+                  src={item.response.imageDataUrl}
+                  unoptimized
+                  width={320}
+                />
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">Abrir desenho humano</p>
+            )}
           </Link>
         ))}
       </div>

@@ -8,7 +8,6 @@ import { RequesterPanel } from "@/components/home/requester-panel";
 import { WorkerPanel } from "@/components/home/worker-panel";
 import { ShareDialog } from "@/components/share-dialog";
 import { PublicHeader } from "@/components/site/public-header";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -649,7 +648,7 @@ export default function HomePage() {
 
             {showHistoryHighlights ? (
               <HistoryHighlights
-                className="hidden self-start xl:block"
+                className="hidden min-h-0 xl:block xl:h-[calc(100svh-8.5rem)]"
                 sessionId={sessionId}
               />
             ) : null}
