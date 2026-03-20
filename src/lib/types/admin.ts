@@ -11,6 +11,9 @@ export type AdminPromptFilters = {
   pageSize?: number;
 };
 
+export type AdminPromptBulkAction = "dryRun" | "delete";
+export type AdminPromptBulkMatchMode = "contains" | "exact" | "startsWith";
+
 export type PaginationMeta = {
   page: number;
   pageSize: number;
@@ -21,6 +24,24 @@ export type PaginationMeta = {
 export type AdminPromptListResponse = {
   items: PromptListItem[];
   pagination: PaginationMeta;
+};
+
+export type AdminPromptBulkRequest = {
+  action: AdminPromptBulkAction;
+  filters: AdminPromptFilters;
+  matchMode?: AdminPromptBulkMatchMode;
+};
+
+export type AdminPromptBulkResponse = {
+  action: AdminPromptBulkAction;
+  filters: AdminPromptFilters;
+  matchMode: AdminPromptBulkMatchMode;
+  summary: {
+    prompts: number;
+    responses: number;
+    votes: number;
+  };
+  sample: PromptListItem[];
 };
 
 export type AdminStats = {

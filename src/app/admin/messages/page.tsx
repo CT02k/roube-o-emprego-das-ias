@@ -19,7 +19,14 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { api } from "@/lib/client-api";
-import { AdminPromptDetail, AdminPromptListResponse, PromptListItem, PromptStatus } from "@/lib/types";
+import {
+  AdminPromptBulkMatchMode,
+  AdminPromptBulkResponse,
+  AdminPromptDetail,
+  AdminPromptListResponse,
+  PromptListItem,
+  PromptStatus,
+} from "@/lib/types";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -33,6 +40,11 @@ const statusOptions: Array<{ value: "all" | PromptStatus; label: string }> = [
 ];
 
 const pageSizeOptions = [10, 20, 50, 100];
+const bulkMatchModeOptions: Array<{ value: AdminPromptBulkMatchMode; label: string }> = [
+  { value: "contains", label: "Contem" },
+  { value: "exact", label: "Exato" },
+  { value: "startsWith", label: "Comeca com" },
+];
 
 const statusBadge = (status: PromptStatus) => {
   if (status === "responded") return { text: "Respondido", variant: "default" as const };
@@ -81,6 +93,11 @@ export default function AdminMessagesPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [busyAction, setBusyAction] = useState<"reopen" | "delete" | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkMatchMode, setBulkMatchMode] = useState<AdminPromptBulkMatchMode>("contains");
+  const [bulkPreview, setBulkPreview] = useState<AdminPromptBulkResponse | null>(null);
+  const [bulkPreviewLoading, setBulkPreviewLoading] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   const updateQuery = (mutator: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -175,6 +192,22 @@ export default function AdminMessagesPage() {
 
   const items = listData?.items ?? [];
   const pagination = listData?.pagination;
+  const hasBulkFilters = Boolean(
+    filters.q ||
+      filters.status ||
+      filters.dateFrom ||
+      filters.dateTo ||
+      filters.requesterSessionId ||
+      filters.responderSessionId
+  );
+  const activeFilterLabels = [
+    filters.q ? `Busca: ${filters.q}` : null,
+    filters.status ? `Status: ${filters.status}` : null,
+    filters.dateFrom ? `De: ${filters.dateFrom}` : null,
+    filters.dateTo ? `Ate: ${filters.dateTo}` : null,
+    filters.requesterSessionId ? `Requester: ${filters.requesterSessionId}` : null,
+    filters.responderSessionId ? `Responder: ${filters.responderSessionId}` : null,
+  ].filter(Boolean) as string[];
 
   const onSelect = (item: PromptListItem) => {
     updateQuery((params) => {
@@ -218,6 +251,68 @@ export default function AdminMessagesPage() {
       setError(err instanceof Error ? err.message : "Falha ao excluir prompt.");
     } finally {
       setBusyAction(null);
+    }
+  };
+
+  const loadBulkPreview = async () => {
+    if (!hasBulkFilters) {
+      setError("Defina pelo menos um filtro antes da exclusao em lote.");
+      return;
+    }
+
+    setBulkPreviewLoading(true);
+    try {
+      const response = await api.adminBulkUpdatePrompts(sessionId, adminToken, {
+        action: "dryRun",
+        matchMode: bulkMatchMode,
+        filters: {
+          q: filters.q || undefined,
+          status: filters.status,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+          requesterSessionId: filters.requesterSessionId || undefined,
+          responderSessionId: filters.responderSessionId || undefined,
+        },
+      });
+      setBulkPreview(response);
+      setError(null);
+    } catch (err) {
+      setBulkPreview(null);
+      setError(err instanceof Error ? err.message : "Falha ao analisar exclusao em lote.");
+    } finally {
+      setBulkPreviewLoading(false);
+    }
+  };
+
+  const runBulkDelete = async () => {
+    if (!hasBulkFilters) {
+      setError("Defina pelo menos um filtro antes da exclusao em lote.");
+      return;
+    }
+
+    setBulkDeleteLoading(true);
+    try {
+      const response = await api.adminBulkUpdatePrompts(sessionId, adminToken, {
+        action: "delete",
+        matchMode: bulkMatchMode,
+        filters: {
+          q: filters.q || undefined,
+          status: filters.status,
+          dateFrom: filters.dateFrom || undefined,
+          dateTo: filters.dateTo || undefined,
+          requesterSessionId: filters.requesterSessionId || undefined,
+          responderSessionId: filters.responderSessionId || undefined,
+        },
+      });
+      setBulkPreview(response);
+      setConfirmDeleteOpen(false);
+      closeDetail();
+      setBulkDeleteOpen(false);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Falha ao excluir prompts filtrados.");
+    } finally {
+      setBulkDeleteLoading(false);
     }
   };
 
@@ -445,6 +540,17 @@ export default function AdminMessagesPage() {
           <Button onClick={resetFilters} variant="outline">
             Limpar filtros
           </Button>
+
+          <Button
+            disabled={!hasBulkFilters}
+            onClick={() => {
+              setBulkDeleteOpen(true);
+              setBulkPreview(null);
+            }}
+            variant="destructive"
+          >
+            Excluir filtrados
+          </Button>
         </CardContent>
       </Card>
 
@@ -567,6 +673,123 @@ export default function AdminMessagesPage() {
               variant="destructive"
             >
               Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        onOpenChange={(open) => {
+          setBulkDeleteOpen(open);
+          if (!open) {
+            setBulkPreview(null);
+          }
+        }}
+        open={bulkDeleteOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir prompts filtrados</DialogTitle>
+            <DialogDescription>
+              Analise primeiro com os filtros atuais e execute a remocao em lote quando o
+              resultado estiver correto.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 text-sm">
+            <div className="space-y-2">
+              <p className="font-medium">Filtros ativos</p>
+              {activeFilterLabels.length === 0 ? (
+                <p className="text-muted-foreground">Nenhum filtro definido.</p>
+              ) : (
+                <div className="space-y-1 text-muted-foreground">
+                  {activeFilterLabels.map((label) => (
+                    <p key={label}>{label}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <p className="font-medium">Modo de busca</p>
+              <Select
+                onValueChange={(value) => {
+                  setBulkMatchMode(value as AdminPromptBulkMatchMode);
+                  setBulkPreview(null);
+                }}
+                value={bulkMatchMode}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Modo de busca" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bulkMatchModeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="rounded-md border p-3">
+              {bulkPreviewLoading ? (
+                <p className="text-muted-foreground">Analisando impacto...</p>
+              ) : !bulkPreview ? (
+                <p className="text-muted-foreground">
+                  Rode uma analise para ver quantos prompts, respostas e votos serao removidos.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <p>Prompts: {bulkPreview.summary.prompts}</p>
+                    <p>Respostas: {bulkPreview.summary.responses}</p>
+                    <p>Votos: {bulkPreview.summary.votes}</p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <p className="font-medium">Amostra</p>
+                    {bulkPreview.sample.length === 0 ? (
+                      <p className="text-muted-foreground">Nenhum prompt encontrado.</p>
+                    ) : (
+                      <div className="space-y-1 text-muted-foreground">
+                        {bulkPreview.sample.map((item) => (
+                          <p key={item.id}>
+                            {item.textPreview} ({new Date(item.createdAt).toLocaleString("pt-BR")})
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button onClick={() => setBulkDeleteOpen(false)} variant="outline">
+              Fechar
+            </Button>
+            <Button
+              disabled={!hasBulkFilters || bulkPreviewLoading || bulkDeleteLoading}
+              onClick={() => void loadBulkPreview()}
+              variant="outline"
+            >
+              Analisar
+            </Button>
+            <Button
+              disabled={
+                !bulkPreview ||
+                bulkPreview.summary.prompts === 0 ||
+                bulkPreviewLoading ||
+                bulkDeleteLoading
+              }
+              onClick={() => void runBulkDelete()}
+              variant="destructive"
+            >
+              {bulkDeleteLoading
+                ? "Excluindo..."
+                : `Excluir ${bulkPreview?.summary.prompts ?? 0} prompts`}
             </Button>
           </DialogFooter>
         </DialogContent>

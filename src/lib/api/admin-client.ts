@@ -1,5 +1,7 @@
 import { request, requestAdmin } from "@/lib/api/base-client";
 import type {
+  AdminPromptBulkRequest,
+  AdminPromptBulkResponse,
   AdminPromptDetail,
   AdminPromptFilters,
   AdminPromptListResponse,
@@ -66,6 +68,17 @@ export const adminClient = {
   adminDeletePrompt: (sessionId: string, adminToken: string, id: string) =>
     requestAdmin<{ ok: true }>(`/api/admin/prompts/${id}`, {
       method: "DELETE",
+      sessionId,
+      adminToken,
+    }),
+  adminBulkUpdatePrompts: (
+    sessionId: string,
+    adminToken: string,
+    payload: AdminPromptBulkRequest
+  ) =>
+    requestAdmin<AdminPromptBulkResponse>("/api/admin/prompts/bulk", {
+      method: "POST",
+      body: JSON.stringify(payload),
       sessionId,
       adminToken,
     }),
