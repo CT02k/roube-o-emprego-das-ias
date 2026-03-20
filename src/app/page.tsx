@@ -8,6 +8,7 @@ import { RequesterPanel } from "@/components/home/requester-panel";
 import { WorkerPanel } from "@/components/home/worker-panel";
 import { ShareDialog } from "@/components/share-dialog";
 import { PublicHeader } from "@/components/site/public-header";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,6 +57,7 @@ import {
 
 const NATIVE_SHARE_ENABLED =
   process.env.NEXT_PUBLIC_NATIVE_SHARE_ENABLED === "true";
+const COMMUNITY_NOTICE_STORAGE_KEY = "community-notice-dismissed-v1";
 
 const canRespond = (detail: PromptDetail | null, sessionId: string) => {
   if (!detail || detail.status !== "in_progress" || !detail.claimInfo) {
@@ -91,6 +93,7 @@ export default function HomePage() {
   const [shareHintOpen, setShareHintOpen] = useState(false);
   const [isSubmitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [noticeOpen, setNoticeOpen] = useState(false);
 
   const {
     adminUnlocked,
@@ -170,6 +173,13 @@ export default function HomePage() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [openAdminDialog]);
+
+  useEffect(() => {
+    const dismissed = window.localStorage.getItem(COMMUNITY_NOTICE_STORAGE_KEY);
+    if (!dismissed) {
+      setNoticeOpen(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (!NATIVE_SHARE_ENABLED) {
@@ -365,6 +375,11 @@ export default function HomePage() {
     if (mode === "worker" && canSendWorker) {
       void submitWorkerResponse();
     }
+  };
+
+  const dismissNotice = () => {
+    window.localStorage.setItem(COMMUNITY_NOTICE_STORAGE_KEY, "1");
+    setNoticeOpen(false);
   };
 
   return (
@@ -641,6 +656,24 @@ export default function HomePage() {
           </div>
         </main>
       </div>
+
+      <Dialog onOpenChange={setNoticeOpen} open={noticeOpen}>
+        <DialogContent className="max-w-md border-border bg-card">
+          <DialogHeader>
+            <DialogTitle>Não imaginei que teria que falar isso</DialogTitle>
+            <DialogDescription>
+              Mas, eu não ligo que vocês zooem, brinquem ou ate façam bot pra upvote e coisas do tipo.
+              Só tenham bom senso: spammar 20 mil mensagens ou mandar apologia ao nazismo estraga a brincadeira pra todo
+              mundo.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={dismissNotice} type="button">
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <DrawingDialog
         onOpenChange={setCanvasOpen}
