@@ -78,14 +78,14 @@ export function WorkerPanel({
                 alt="Desenho humano enviado como resposta"
                 footer={
                   selectedDetail.response ? (
-                    <div className="flex justify-end">
-                      <ReportButton
-                        compact
-                        sessionId={sessionId}
-                        targetId={selectedDetail.response.id}
-                        targetType="response"
-                      />
-                    </div>
+                    <ReportButton
+                      className="opacity-0 transition-opacity group-hover/is-assistant:opacity-100"
+                      compact
+                      iconOnly
+                      sessionId={sessionId}
+                      targetId={selectedDetail.response.id}
+                      targetType="response"
+                    />
                   ) : null
                 }
                 response={selectedDetail.response}

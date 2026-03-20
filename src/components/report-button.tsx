@@ -21,6 +21,8 @@ type ReportButtonProps = {
   targetType: ReportTargetType;
   targetId: string;
   compact?: boolean;
+  iconOnly?: boolean;
+  className?: string;
 };
 
 const reasonOptions: Array<{ value: ReportReason; label: string }> = [
@@ -32,7 +34,14 @@ const reasonOptions: Array<{ value: ReportReason; label: string }> = [
   { value: "other", label: "Outro" },
 ];
 
-export function ReportButton({ sessionId, targetType, targetId, compact = false }: ReportButtonProps) {
+export function ReportButton({
+  sessionId,
+  targetType,
+  targetId,
+  compact = false,
+  iconOnly = false,
+  className,
+}: ReportButtonProps) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<ReportReason>("spam");
   const [details, setDetails] = useState("");
@@ -71,9 +80,15 @@ export function ReportButton({ sessionId, targetType, targetId, compact = false 
 
   return (
     <>
-      <Button onClick={() => setOpen(true)} size={compact ? "sm" : "default"} type="button" variant="ghost">
+      <Button
+        className={className}
+        onClick={() => setOpen(true)}
+        size={compact ? "sm" : "default"}
+        type="button"
+        variant="ghost"
+      >
         <FlagIcon className="size-4" />
-        Denunciar
+        {iconOnly ? <span className="sr-only">Denunciar</span> : "Denunciar"}
       </Button>
       <Dialog onOpenChange={(nextOpen) => (nextOpen ? setOpen(true) : close())} open={open}>
         <DialogContent className="max-w-md">

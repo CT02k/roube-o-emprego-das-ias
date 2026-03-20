@@ -61,14 +61,14 @@ export function RequesterPanel({
               <PromptResponse
                 alt="Desenho humano enviado como resposta"
                 footer={
-                  <div className="flex justify-end">
-                    <ReportButton
-                      compact
-                      sessionId={sessionId}
-                      targetId={entry.response.id}
-                      targetType="response"
-                    />
-                  </div>
+                  <ReportButton
+                    className="opacity-0 transition-opacity group-hover/is-assistant:opacity-100"
+                    compact
+                    iconOnly
+                    sessionId={sessionId}
+                    targetId={entry.response.id}
+                    targetType="response"
+                  />
                 }
                 response={entry.response}
               />

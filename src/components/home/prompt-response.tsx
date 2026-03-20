@@ -33,7 +33,7 @@ export function PromptResponse({ response, alt, footer }: PromptResponseProps) {
         ) : (
           <p className="text-muted-foreground text-sm">Resposta de imagem indisponivel.</p>
         )}
-        {footer ? <div className="mt-3">{footer}</div> : null}
+        {footer ? <div className="mt-3 flex justify-start">{footer}</div> : null}
       </MessageContent>
     </Message>
   );
