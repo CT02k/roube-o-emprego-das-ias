@@ -1,5 +1,6 @@
 import { getRequesterThread } from "@/lib/prompt-service";
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { NextRequest, NextResponse } from "next/server";
 
 const badRequest = (message: string) =>
@@ -11,6 +12,7 @@ export async function GET(request: NextRequest) {
     return badRequest("x-session-id obrigatorio.");
   }
 
+  await touchSessionIdentity(sessionId, request);
   return NextResponse.json({
     items: await getRequesterThread(sessionId),
   });

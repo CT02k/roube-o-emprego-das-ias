@@ -1,5 +1,6 @@
 import { respondToPrompt } from "@/lib/prompt-service";
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { submitResponseSchema } from "@/lib/validation";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "x-session-id obrigatorio." }, { status: 400 });
   }
 
+  await touchSessionIdentity(sessionId, request);
   const payload = await request.json().catch(() => null);
   const parsed = submitResponseSchema.safeParse(payload);
   if (!parsed.success) {

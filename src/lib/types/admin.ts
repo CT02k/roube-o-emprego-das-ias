@@ -54,6 +54,8 @@ export type AdminStats = {
 export type AdminPromptDetail = PromptDetail & {
   updatedAt: string;
   requesterSessionId: string;
+  requesterIpHash?: string;
+  requesterIpSource?: string;
   claimedBySessionId?: string;
   claimedAt?: string;
   responderSessionId?: string;

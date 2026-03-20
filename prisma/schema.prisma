@@ -56,3 +56,16 @@ model PromptResponseVote {
   @@index([responseId])
   @@index([createdAt(sort: Desc)])
 }
+
+model SessionIdentity {
+  sessionId String   @id
+  ipHash    String?
+  ipSource  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastSeenAt DateTime @default(now())
+  lastIpAt  DateTime?
+
+  @@index([ipHash])
+  @@index([lastSeenAt(sort: Desc)])
+}

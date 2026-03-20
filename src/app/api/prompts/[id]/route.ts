@@ -1,5 +1,6 @@
 import { getPromptDetailForSession } from "@/lib/prompt-service";
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { NextRequest, NextResponse } from "next/server";
 
 type Context = {
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "x-session-id obrigatorio." }, { status: 400 });
   }
 
+  await touchSessionIdentity(sessionId, request);
   const { id } = await context.params;
 
   const result = await getPromptDetailForSession(id, sessionId);

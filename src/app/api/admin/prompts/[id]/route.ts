@@ -23,10 +23,18 @@ export async function GET(request: NextRequest, context: Context) {
     return NextResponse.json({ error: "Prompt nao encontrado." }, { status: 404 });
   }
 
+  const sessionIdentity = await prisma.sessionIdentity.findUnique({
+    where: {
+      sessionId: prompt.requesterSessionId,
+    },
+  });
+
   return NextResponse.json({
     ...toPromptDetail(prompt),
     updatedAt: prompt.updatedAt.toISOString(),
     requesterSessionId: prompt.requesterSessionId,
+    requesterIpHash: sessionIdentity?.ipHash ?? undefined,
+    requesterIpSource: sessionIdentity?.ipSource ?? undefined,
     claimedBySessionId: prompt.claimedBySessionId ?? undefined,
     claimedAt: prompt.claimedAt?.toISOString(),
     responderSessionId: prompt.response?.responderSessionId ?? undefined,

@@ -1,4 +1,5 @@
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { createPromptSchema } from "@/lib/validation";
 import { createPrompt, listPromptsForView } from "@/lib/prompt-service";
 import { NextRequest, NextResponse } from "next/server";
@@ -17,6 +18,7 @@ export async function GET(request: NextRequest) {
     return badRequest("x-session-id obrigatorio.");
   }
 
+  await touchSessionIdentity(sessionId, request);
   return NextResponse.json(await listPromptsForView(sessionId, view));
 }
 
@@ -26,6 +28,7 @@ export async function POST(request: NextRequest) {
     return badRequest("x-session-id obrigatorio.");
   }
 
+  await touchSessionIdentity(sessionId, request);
   const payload = await request.json().catch(() => null);
   const parsed = createPromptSchema.safeParse(payload);
   if (!parsed.success) {

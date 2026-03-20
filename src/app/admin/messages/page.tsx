@@ -375,6 +375,8 @@ export default function AdminMessagesPage() {
                 <CardContent className="space-y-1 text-muted-foreground text-xs">
                   <p>ID: {detail.id}</p>
                   <p>Requester: {detail.requesterSessionId}</p>
+                  <p>Requester IP hash: {detail.requesterIpHash ?? "-"}</p>
+                  <p>Requester IP source: {detail.requesterIpSource ?? "-"}</p>
                   <p>Claimer: {detail.claimedBySessionId ?? "-"}</p>
                   <p>Responder: {detail.responderSessionId ?? "-"}</p>
                   <p>Criado: {new Date(detail.createdAt).toLocaleString("pt-BR")}</p>

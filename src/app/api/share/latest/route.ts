@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
@@ -8,6 +9,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "x-session-id obrigatorio." }, { status: 400 });
   }
 
+  await touchSessionIdentity(sessionId, request);
   const latest = await prisma.prompt.findFirst({
     where: {
       requesterSessionId: sessionId,

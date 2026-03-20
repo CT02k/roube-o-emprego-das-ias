@@ -1,5 +1,6 @@
 import { createAdminToken, isAdminCodeValid } from "@/lib/admin-auth";
 import { getSessionIdFromRequest } from "@/lib/session";
+import { touchSessionIdentity } from "@/lib/session-identity";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
@@ -8,6 +9,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "x-session-id obrigatorio." }, { status: 400 });
   }
 
+  await touchSessionIdentity(sessionId, request);
   const payload = await request.json().catch(() => null);
   const code = typeof payload?.code === "string" ? payload.code.trim() : "";
 
