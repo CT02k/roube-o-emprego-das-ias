@@ -1,3 +1,4 @@
+import type { PromptStatus } from "@prisma/client";
 import { forbiddenAdminResponse, isAdminAuthorized } from "@/lib/admin-auth";
 import {
   buildAdminPromptWhere,
@@ -47,10 +48,11 @@ export async function GET(request: NextRequest) {
   const q = searchParams.get("q")?.trim();
   const requesterSessionId = searchParams.get("requesterSessionId")?.trim();
   const responderSessionId = searchParams.get("responderSessionId")?.trim();
+  const typedStatus = status as PromptStatus | undefined;
 
   const where = buildAdminPromptWhere({
     q,
-    status: status ?? undefined,
+    status: typedStatus,
     dateFrom: searchParams.get("dateFrom") ?? undefined,
     dateTo: searchParams.get("dateTo") ?? undefined,
     requesterSessionId,
