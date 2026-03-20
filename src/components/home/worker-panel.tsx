@@ -61,25 +61,15 @@ export function WorkerPanel({
           )}
           {selectedDetail && (
             <>
-              <div className="space-y-2">
-                <Message from="user">
-                  <MessageContent>{selectedDetail.text}</MessageContent>
-                </Message>
-                <div className="flex justify-end">
-                  <ReportButton
-                    compact
-                    sessionId={sessionId}
-                    targetId={selectedDetail.id}
-                    targetType="prompt"
-                  />
-                </div>
-              </div>
+              <Message from="user">
+                <MessageContent>{selectedDetail.text}</MessageContent>
+              </Message>
               <PromptResponse
                 alt="Desenho humano enviado como resposta"
                 footer={
                   selectedDetail.response ? (
                     <ReportButton
-                      className="opacity-0 transition-opacity group-hover/is-assistant:opacity-100"
+                      className="opacity-0 transition-opacity group-hover:opacity-100"
                       compact
                       iconOnly
                       sessionId={sessionId}

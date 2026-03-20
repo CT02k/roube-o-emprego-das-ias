@@ -49,20 +49,15 @@ export function RequesterPanel({
         )}
         {requesterThread.map((entry) => (
           <div className="space-y-3" key={entry.id}>
-            <div className="space-y-2">
-              <Message from="user">
-                <MessageContent>{entry.text}</MessageContent>
-              </Message>
-              <div className="flex justify-end">
-                <ReportButton compact sessionId={sessionId} targetId={entry.id} targetType="prompt" />
-              </div>
-            </div>
+            <Message from="user">
+              <MessageContent>{entry.text}</MessageContent>
+            </Message>
             {entry.response ? (
               <PromptResponse
                 alt="Desenho humano enviado como resposta"
                 footer={
                   <ReportButton
-                    className="opacity-0 transition-opacity group-hover/is-assistant:opacity-100"
+                    className="opacity-0 transition-opacity group-hover:opacity-100"
                     compact
                     iconOnly
                     sessionId={sessionId}
