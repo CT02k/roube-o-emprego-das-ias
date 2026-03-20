@@ -51,8 +51,61 @@ const pickDifferentCaption = (blockedIndex: number) => {
   return next;
 };
 
-const clampText = (value: string, max = 260) =>
-  value.length > max ? `${value.slice(0, max - 3)}...` : value;
+function ellipsizeToWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+) {
+  if (ctx.measureText(text).width <= maxWidth) {
+    return text;
+  }
+
+  let trimmed = text;
+  while (trimmed.length > 0 && ctx.measureText(`${trimmed}...`).width > maxWidth) {
+    trimmed = trimmed.slice(0, -1);
+  }
+
+  return trimmed ? `${trimmed}...` : "...";
+}
+
+function getWrappedLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number,
+  maxLines: number
+) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    const width = ctx.measureText(test).width;
+    if (width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+
+      if (lines.length === maxLines - 1) {
+        break;
+      }
+    } else {
+      current = test;
+    }
+  }
+
+  const consumedWords = lines.join(" ").split(/\s+/).filter(Boolean).length;
+  const remainingWords = words.slice(consumedWords);
+  const lastLine = current || remainingWords.join(" ");
+
+  if (lines.length < maxLines && lastLine) {
+    const hasMoreWords = consumedWords + lastLine.split(/\s+/).filter(Boolean).length < words.length;
+    lines.push(
+      hasMoreWords ? ellipsizeToWidth(ctx, `${lastLine} ${remainingWords.slice(lastLine ? 0 : 1).join(" ")}`.trim(), maxWidth) : lastLine
+    );
+  }
+
+  return lines.slice(0, maxLines);
+}
 
 function drawRoundedRect(
   ctx: CanvasRenderingContext2D,
@@ -84,30 +137,46 @@ function wrapText(
   lineHeight: number,
   maxLines: number
 ) {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    const width = ctx.measureText(test).width;
-    if (width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-      if (lines.length >= maxLines - 1) {
-        break;
-      }
-    } else {
-      current = test;
-    }
-  }
-
-  if (current && lines.length < maxLines) {
-    lines.push(current);
-  }
+  const lines = getWrappedLines(ctx, text, maxWidth, maxLines);
 
   lines.forEach((line, idx) => {
     ctx.fillText(line, x, y + idx * lineHeight);
+  });
+}
+
+function fitTextBlock(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  options: {
+    x: number;
+    y: number;
+    maxWidth: number;
+    maxHeight: number;
+    maxLines: number;
+    fontFamily: string;
+    fontWeight: number;
+    startFontSize: number;
+    minFontSize: number;
+    lineHeightFactor: number;
+  }
+) {
+  for (let fontSize = options.startFontSize; fontSize >= options.minFontSize; fontSize -= 2) {
+    const lineHeight = Math.round(fontSize * options.lineHeightFactor);
+    ctx.font = `${options.fontWeight} ${fontSize}px ${options.fontFamily}`;
+    const lines = getWrappedLines(ctx, text, options.maxWidth, options.maxLines);
+    if (lines.length * lineHeight <= options.maxHeight) {
+      lines.forEach((line, idx) => {
+        ctx.fillText(line, options.x, options.y + idx * lineHeight);
+      });
+      return;
+    }
+  }
+
+  const fallbackFont = options.minFontSize;
+  const fallbackLineHeight = Math.round(fallbackFont * options.lineHeightFactor);
+  ctx.font = `${options.fontWeight} ${fallbackFont}px ${options.fontFamily}`;
+  getWrappedLines(ctx, text, options.maxWidth, options.maxLines).forEach((line, idx) => {
+    ctx.fillText(line, options.x, options.y + idx * fallbackLineHeight);
   });
 }
 
@@ -205,8 +274,18 @@ export function ShareDialog({
     ctx.fillText("RESPOSTA DA IH (Inteligência Humana)", boxX + 28, responseY + 42);
 
     ctx.fillStyle = "#f5f5f5";
-    ctx.font = "500 32px 'Space Grotesk', sans-serif";
-    wrapText(ctx, clampText(payload.promptText, 220), boxX + 28, promptY + 88, boxW - 56, 36, 2);
+    fitTextBlock(ctx, payload.promptText, {
+      x: boxX + 28,
+      y: promptY + 88,
+      maxWidth: boxW - 56,
+      maxHeight: promptH - 64,
+      maxLines: isImageResponse ? 3 : 4,
+      fontFamily: "'Space Grotesk', sans-serif",
+      fontWeight: 500,
+      startFontSize: 32,
+      minFontSize: 22,
+      lineHeightFactor: 1.18,
+    });
 
     ctx.fillStyle = "#737373";
     ctx.font = "600 20px 'IBM Plex Mono', monospace";
@@ -223,15 +302,18 @@ export function ShareDialog({
     ctx.fillText(WATERMARK, 585, 830);
 
     if (!isImageResponse) {
-      wrapText(
-        ctx,
-        clampText(payload.responseText ?? "Sem texto", 220),
-        boxX + 28,
-        responseY + 95,
-        boxW - 56,
-        40,
-        2
-      );
+      fitTextBlock(ctx, payload.responseText ?? "Sem texto", {
+        x: boxX + 28,
+        y: responseY + 95,
+        maxWidth: boxW - 56,
+        maxHeight: responseH - 120,
+        maxLines: 5,
+        fontFamily: "'Space Grotesk', sans-serif",
+        fontWeight: 500,
+        startFontSize: 32,
+        minFontSize: 22,
+        lineHeightFactor: 1.22,
+      });
       if (active) {
         setImageDataUrl(canvas.toDataURL("image/png"));
       }
