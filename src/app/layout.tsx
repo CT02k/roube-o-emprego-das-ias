@@ -84,6 +84,7 @@ export default function RootLayout({
         <Script
           src="https://rybbit.recaply.com.br/api/script.js"
           data-site-id="2"
+          data-track-errors="true"
           defer
         />
         <TooltipProvider>
