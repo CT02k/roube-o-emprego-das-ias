@@ -12,6 +12,7 @@ import { ADMIN_TOKEN_STORAGE_KEY } from "@/lib/admin-client";
 import { cn } from "@/lib/utils";
 import {
   BarChart3Icon,
+  FlagIcon,
   HomeIcon,
   LogOutIcon,
   MenuIcon,
@@ -28,6 +29,7 @@ type AdminShellProps = {
 const navItems = [
   { href: "/admin", label: "Overview", icon: BarChart3Icon },
   { href: "/admin/messages", label: "Messages", icon: MessagesSquareIcon },
+  { href: "/admin/reports", label: "Reports", icon: FlagIcon },
 ];
 
 type NavContentProps = {
@@ -122,7 +124,11 @@ export function AdminShell({ children }: AdminShellProps) {
                 </SheetContent>
               </Sheet>
               <p className="font-semibold text-sm">
-                {pathname === "/admin/messages" ? "Messages" : "Overview"}
+                {pathname === "/admin/messages"
+                  ? "Messages"
+                  : pathname === "/admin/reports"
+                    ? "Reports"
+                    : "Overview"}
               </p>
             </div>
             <div className="flex items-center gap-2">

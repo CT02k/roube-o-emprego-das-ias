@@ -3,6 +3,7 @@
 import { HistoryShareButton } from "@/components/history/history-share-button";
 import { HistoryVoteButton } from "@/components/history/history-vote-button";
 import { PromptResponse } from "@/components/home/prompt-response";
+import { ReportButton } from "@/components/report-button";
 import { Badge } from "@/components/ui/badge";
 import { useSessionId } from "@/hooks/use-session-id";
 import { api } from "@/lib/client-api";
@@ -89,16 +90,22 @@ export function HistoryDetailView({ initialItem }: HistoryDetailViewProps) {
       </div>
 
       <section className="space-y-2">
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
-          Pergunta
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
+            Pergunta
+          </p>
+          <ReportButton compact sessionId={sessionId} targetId={item.promptId} targetType="prompt" />
+        </div>
         <p className="text-lg font-medium text-foreground">{item.promptText}</p>
       </section>
 
       <section className="space-y-2">
-        <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
-          Resposta
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-muted-foreground text-xs uppercase tracking-[0.18em]">
+            Resposta
+          </p>
+          <ReportButton compact sessionId={sessionId} targetId={item.response.id} targetType="response" />
+        </div>
         <div className="overflow-hidden rounded-sm border border-border bg-background/70 p-3">
           <PromptResponse
             alt="Resposta humana do ranking"

@@ -17,6 +17,26 @@ enum ResponseType {
   image
 }
 
+enum ReportTargetType {
+  prompt
+  response
+}
+
+enum ReportReason {
+  spam
+  harassment
+  hateful
+  sexual
+  violence
+  other
+}
+
+enum ReportStatus {
+  open
+  dismissed
+  actioned
+}
+
 model Prompt {
   id                 String         @id @default(cuid())
   text               String
@@ -27,6 +47,7 @@ model Prompt {
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   response           PromptResponse?
+  reports            Report[]
 
   @@index([requesterSessionId, createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Asc)])
@@ -43,6 +64,7 @@ model PromptResponse {
   createdAt          DateTime             @default(now())
   prompt             Prompt               @relation(fields: [promptId], references: [id], onDelete: Cascade)
   votes              PromptResponseVote[]
+  reports            Report[]
 }
 
 model PromptResponseVote {
@@ -57,6 +79,34 @@ model PromptResponseVote {
   @@index([createdAt(sort: Desc)])
 }
 
+model Report {
+  id                  String           @id @default(cuid())
+  targetType          ReportTargetType
+  targetId            String
+  reporterSessionId   String
+  reason              ReportReason
+  details             String?
+  status              ReportStatus     @default(open)
+  promptId            String?
+  responseId          String?
+  snapshotPromptText  String?
+  snapshotResponseText String?
+  snapshotResponseType ResponseType?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  reviewedAt          DateTime?
+  reviewedBySessionId String?
+  prompt              Prompt?          @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  response            PromptResponse?  @relation(fields: [responseId], references: [id], onDelete: SetNull)
+  reporterIdentity    SessionIdentity  @relation(fields: [reporterSessionId], references: [sessionId])
+
+  @@unique([reporterSessionId, targetType, targetId])
+  @@index([status, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@index([promptId])
+  @@index([responseId])
+}
+
 model SessionIdentity {
   sessionId String   @id
   ipHash    String?
@@ -65,6 +115,7 @@ model SessionIdentity {
   updatedAt DateTime @updatedAt
   lastSeenAt DateTime @default(now())
   lastIpAt  DateTime?
+  reports   Report[]
 
   @@index([ipHash])
   @@index([lastSeenAt(sort: Desc)])

@@ -7,6 +7,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptResponse } from "@/components/home/prompt-response";
+import { ReportButton } from "@/components/report-button";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { PromptDetail } from "@/lib/types";
@@ -15,6 +16,7 @@ import Image from "next/image";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
 type WorkerPanelProps = {
+  sessionId: string;
   selectedDetail: PromptDetail | null;
   isLoading: boolean;
   textDraft: string;
@@ -31,6 +33,7 @@ type WorkerPanelProps = {
 };
 
 export function WorkerPanel({
+  sessionId,
   selectedDetail,
   isLoading,
   textDraft,
@@ -58,11 +61,33 @@ export function WorkerPanel({
           )}
           {selectedDetail && (
             <>
-              <Message from="user">
-                <MessageContent>{selectedDetail.text}</MessageContent>
-              </Message>
+              <div className="space-y-2">
+                <Message from="user">
+                  <MessageContent>{selectedDetail.text}</MessageContent>
+                </Message>
+                <div className="flex justify-end">
+                  <ReportButton
+                    compact
+                    sessionId={sessionId}
+                    targetId={selectedDetail.id}
+                    targetType="prompt"
+                  />
+                </div>
+              </div>
               <PromptResponse
                 alt="Desenho humano enviado como resposta"
+                footer={
+                  selectedDetail.response ? (
+                    <div className="flex justify-end">
+                      <ReportButton
+                        compact
+                        sessionId={sessionId}
+                        targetId={selectedDetail.response.id}
+                        targetType="response"
+                      />
+                    </div>
+                  ) : null
+                }
                 response={selectedDetail.response}
               />
             </>

@@ -8,6 +8,7 @@ import {
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { PromptResponse } from "@/components/home/prompt-response";
+import { ReportButton } from "@/components/report-button";
 import { Button } from "@/components/ui/button";
 import type { PromptDetail, PromptListItem } from "@/lib/types";
 import { BellIcon, LoaderCircleIcon, User2Icon } from "lucide-react";
@@ -20,6 +21,7 @@ const statusMeta = (item: Pick<PromptListItem, "status">) => {
 };
 
 type RequesterPanelProps = {
+  sessionId: string;
   requesterThread: PromptDetail[];
   isLoading: boolean;
   notifyEnabled: boolean;
@@ -28,6 +30,7 @@ type RequesterPanelProps = {
 };
 
 export function RequesterPanel({
+  sessionId,
   requesterThread,
   isLoading,
   notifyEnabled,
@@ -46,12 +49,27 @@ export function RequesterPanel({
         )}
         {requesterThread.map((entry) => (
           <div className="space-y-3" key={entry.id}>
-            <Message from="user">
-              <MessageContent>{entry.text}</MessageContent>
-            </Message>
+            <div className="space-y-2">
+              <Message from="user">
+                <MessageContent>{entry.text}</MessageContent>
+              </Message>
+              <div className="flex justify-end">
+                <ReportButton compact sessionId={sessionId} targetId={entry.id} targetType="prompt" />
+              </div>
+            </div>
             {entry.response ? (
               <PromptResponse
                 alt="Desenho humano enviado como resposta"
+                footer={
+                  <div className="flex justify-end">
+                    <ReportButton
+                      compact
+                      sessionId={sessionId}
+                      targetId={entry.response.id}
+                      targetType="response"
+                    />
+                  </div>
+                }
                 response={entry.response}
               />
             ) : (

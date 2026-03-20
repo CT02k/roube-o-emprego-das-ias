@@ -3,13 +3,15 @@
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import type { PromptDetail } from "@/lib/types";
 import Image from "next/image";
+import type { ReactNode } from "react";
 
 type PromptResponseProps = {
   response: PromptDetail["response"];
   alt: string;
+  footer?: ReactNode;
 };
 
-export function PromptResponse({ response, alt }: PromptResponseProps) {
+export function PromptResponse({ response, alt, footer }: PromptResponseProps) {
   if (!response) {
     return null;
   }
@@ -31,6 +33,7 @@ export function PromptResponse({ response, alt }: PromptResponseProps) {
         ) : (
           <p className="text-muted-foreground text-sm">Resposta de imagem indisponivel.</p>
         )}
+        {footer ? <div className="mt-3">{footer}</div> : null}
       </MessageContent>
     </Message>
   );

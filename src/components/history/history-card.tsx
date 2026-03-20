@@ -3,7 +3,9 @@
 import { HistoryShareButton } from "@/components/history/history-share-button";
 import { HistoryVoteButton } from "@/components/history/history-vote-button";
 import { PromptResponse } from "@/components/home/prompt-response";
+import { ReportButton } from "@/components/report-button";
 import { Badge } from "@/components/ui/badge";
+import { useSessionId } from "@/hooks/use-session-id";
 import type { HistoryListItem } from "@/lib/types";
 import Link from "next/link";
 
@@ -21,6 +23,7 @@ const formatDate = (value: string) =>
   }).format(new Date(value));
 
 export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
+  const sessionId = useSessionId();
   const sharePayload = {
     promptText: item.promptText,
     responseType: item.response.type,
@@ -44,6 +47,7 @@ export function HistoryCard({ item, onVoteChange }: HistoryCardProps) {
         <PromptResponse alt="Resposta humana do historico" response={item.response} />
       </Link>
       <div className="flex items-center justify-end gap-3">
+        <ReportButton compact sessionId={sessionId} targetId={item.response.id} targetType="response" />
         <HistoryShareButton payload={sharePayload} />
         <HistoryVoteButton item={item} onVoteChange={onVoteChange} />
       </div>

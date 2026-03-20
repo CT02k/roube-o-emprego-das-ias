@@ -40,6 +40,7 @@ describe("prompt helpers", () => {
         text: null,
         imageDataUrl: "data:image/png;base64,abc",
         responderSessionId: "humano_2",
+        upvotesCount: 0,
         createdAt: new Date("2026-01-10T12:03:00.000Z"),
       },
     });

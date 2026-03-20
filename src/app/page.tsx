@@ -577,6 +577,7 @@ export default function HomePage() {
                       notifyPermission={notifyPermission}
                       onEnableNotifications={onEnableNotifications}
                       requesterThread={requesterThread}
+                      sessionId={sessionId}
                     />
                     <Separator />
                     <div className="p-4">
@@ -621,6 +622,7 @@ export default function HomePage() {
                     onSubmitWorkerResponse={submitWorkerResponse}
                     onTextDraftChange={setTextDraft}
                     selectedDetail={selectedDetail}
+                    sessionId={sessionId}
                     textDraft={textDraft}
                   />
                 ) : (
